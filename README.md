@@ -1,4 +1,22 @@
-## consul basic ops
+## Diplomatic rank
+
+[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815-1961):
+
+> The rank of Envoy was short for "Envoy Extraordinary and Minister Plenipotentiary", and was more commonly known as Minister.[2] For example, the Envoy Extraordinary and Minister Plenipotentiary of the United States to the French Empire was known as the "United States Minister to France" and addressed as "Monsieur le Ministre."
+
+- [How to play](#how-to-play)
+- [Map to Consul](#map-to-consul)
+- [Consul to Map](#consul-to-map)
+- [Watch for key/value changes](#watch-for-keyvalue-changes)
+- [Consul CRUD](#consul-crud)
+  - [Adding to Consul](#adding-to-consul)
+  - [Reading from Consul](#reading-from-consul)
+  - [Deleting from Consul](#deleting-from-consul)
+- [License](#license)
+
+## How to play
+
+In order to follow all the docs below, bring envoy in:
 
 ```clojure
 $ boot repl
@@ -6,7 +24,7 @@ boot.user=> (require '[envoy.core :as envoy :refer [stop]])
 nil
 ```
 
-### Map to Consul
+## Map to Consul
 
 Since most Clojure configs are EDN maps, you can simply push the map to Consul with preserving the hierarchy:
 
@@ -35,42 +53,25 @@ and a visual:
 
 <p align="center"><img src="doc/img/map-to-consul.png"></p>
 
-### Adding to Consul
+## Consul to Map
 
-All this can be done manually by "puts" of course:
-
-```clojure
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/mission" "Horsehead Nebula")
-{:opts {:body "Horsehead Nebula", :method :put, :url "http://localhost:8500/v1/kv/hubble/mission"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:57:40 GMT"}, :status 200}
-
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/store" "spacecraft")
-{:opts {:body "spacecraft", :method :put, :url "http://localhost:8500/v1/kv/hubble/store"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:58:13 GMT"}, :status 200}
-
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/camera/mode" "color")
-{:opts {:body "color", :method :put, :url "http://localhost:8500/v1/kv/hubble/camera/mode"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:58:36 GMT"}, :status 200}
-```
-
-### Reading from Consul
+In case a Clojure map with config read from Consul is needed it is just `consul->map` away:
 
 ```clojure
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
-{:hubble/ nil, :hubble/camera/ nil, :hubble/camera/mode "color", :hubble/mission "Horsehead Nebula", :hubble/store "spacecraft"}
-
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble/store")
-{:hubble/store "spacecraft"}
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/")
+{:hubble
+ {:camera {:mode "color"},
+  :mission "Horsehead Nebula",
+  :store "spacecraft://tape"}}
 ```
 
-### Deleting from Consul
+you may notice it comes directly from "the source" by looking at Consul logs:
 
-```clojure
-boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
-{:opts {:method :delete, :url "http://localhost:8500/v1/kv/hubble/camera?recurse"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:59:26 GMT"}, :status 200}
-
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
-{:hubble/ nil, :hubble/mission "Horsehead Nebula", :hubble/store "spacecraft"}
+```bash
+2016/11/02 02:04:32 [DEBUG] http: Request GET /v1/kv/?recurse (76.386µs) from=127.0.0.1:54167
 ```
 
-### Watch for key/value changes
+## Watch for key/value changes
 
 Adding a watcher is simple: `envoy/watch-path path fun`
 
@@ -120,6 +121,53 @@ watcher says: {:hubble/store spacecraft tape}
 boot.user=> (stop store-watcher)
 true
 "stopping" "http://localhost:8500/v1/kv/hubble/store" "watcher"
+```
+## Consul CRUD
+
+### Adding to Consul
+
+The map from above can be done manually by "puts" of course:
+
+```clojure
+boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/mission" "Horsehead Nebula")
+{:opts {:body "Horsehead Nebula", :method :put, :url "http://localhost:8500/v1/kv/hubble/mission"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:57:40 GMT"}, :status 200}
+
+boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/store" "spacecraft")
+{:opts {:body "spacecraft", :method :put, :url "http://localhost:8500/v1/kv/hubble/store"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:58:13 GMT"}, :status 200}
+
+boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/camera/mode" "color")
+{:opts {:body "color", :method :put, :url "http://localhost:8500/v1/kv/hubble/camera/mode"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:58:36 GMT"}, :status 200}
+```
+
+### Reading from Consul
+
+```clojure
+boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
+{:hubble/camera/mode "color",
+ :hubble/mission "Horsehead Nebula",
+ :hubble/store "spacecraft://tape"}
+
+boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble/store")
+{:hubble/store "spacecraft"}
+```
+
+in case there is no need to convert keys to keywords, it can be disabled:
+
+```clojure
+boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/" :keywordize? false)
+{"hubble/camera/mode" "color",
+ "hubble/mission" "Horsehead Nebula",
+ "hubble/store" "spacecraft://tape"}
+```
+
+### Deleting from Consul
+
+```clojure
+boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
+{:opts {:method :delete, :url "http://localhost:8500/v1/kv/hubble/camera?recurse"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:59:26 GMT"}, :status 200}
+
+boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
+{:hubble/ nil, :hubble/mission "Horsehead Nebula", :hubble/store "spacecraft"}
 ```
 
 ## License
