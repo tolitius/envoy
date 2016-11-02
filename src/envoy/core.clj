@@ -42,16 +42,16 @@
 
 (defn- start-watcher [path fun stop?]
   (let [ch (chan)]
-    (go-loop [index (read-index path)]
+    (go-loop [index nil]
              (http/get path
-                       {:query-params {:index index}}
+                       {:query-params {:index (or index (read-index path))}}
                        #(>!! ch %))
              (alt!
                stop? ([_]
                       (prn "stopping" path "watcher"))
                ch ([resp] 
                    (let [new-idx (index-of resp)]
-                     (when new-idx
+                     (when (and index (not= new-idx index))  ;; first time there is no index
                        (fun (read-values resp)))
                      (recur new-idx)))))))
 
