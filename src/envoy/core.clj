@@ -71,5 +71,5 @@
     (put (str kv-path "/" k) (str v))))
 
 (defn consul->map [path]
-  (->> (partial get-all path :keywordize? false)
+  (->> (partial get-all (str path "/") :keywordize? false)
        props->map))

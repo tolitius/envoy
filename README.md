@@ -60,7 +60,7 @@ and a visual:
 In case a Clojure map with config read from Consul is needed it is just `consul->map` away:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/")
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv")
 {:hubble
  {:camera {:mode "color"},
   :mission "Horsehead Nebula",
