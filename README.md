@@ -1,8 +1,10 @@
 ## Diplomatic rank
 
-[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815-1961):
+_[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815-1961):_
 
-> The rank of Envoy was short for "Envoy Extraordinary and Minister Plenipotentiary", and was more commonly known as Minister.[2] For example, the Envoy Extraordinary and Minister Plenipotentiary of the United States to the French Empire was known as the "United States Minister to France" and addressed as "Monsieur le Ministre."
+> _The rank of Envoy was short for "Envoy Extraordinary and Minister Plenipotentiary", and was more commonly known as Minister. For example, the Envoy Extraordinary and Minister Plenipotentiary of the United States to the French Empire was known as the "United States Minister to France" and addressed as "Monsieur le Ministre."_
+
+-
 
 - [How to play](#how-to-play)
 - [Map to Consul](#map-to-consul)
@@ -73,7 +75,7 @@ you may notice it comes directly from "the source" by looking at Consul logs:
 
 ## Watch for key/value changes
 
-Adding a watcher is simple: `envoy/watch-path path fun`
+Adding a watcher is simple: `(watch-path path fun)`
 
 `fun` is going to be called with a new value each time the `path`'s value is changed.
 
