@@ -43,15 +43,17 @@
 (defn- start-watcher [path fun stop?]
   (let [ch (chan)]
     (go-loop [index (read-index path)]
-      (http/get (recurse path)
-                {:query-params {:index index}}
-                #(>!! ch %))
-      (alt!
-        stop? ([_]
-               (prn "stopping" path "watcher"))
-        ch ([resp] 
-            (fun (read-values resp))
-            (recur (index-of resp)))))))
+             (http/get path
+                       {:query-params {:index index}}
+                       #(>!! ch %))
+             (alt!
+               stop? ([_]
+                      (prn "stopping" path "watcher"))
+               ch ([resp] 
+                   (let [new-idx (index-of resp)]
+                     (when new-idx
+                       (fun (read-values resp)))
+                     (recur new-idx)))))))
 
 (defprotocol Stoppable
   (stop [this]))
@@ -63,7 +65,7 @@
 
 (defn watch-path [path fun]
   (let [stop-ch (chan)]
-    (start-watcher path fun stop-ch)
+    (start-watcher (recurse path) fun stop-ch)
     (Watcher. stop-ch)))
 
 (defn map->consul [kv-path m]
