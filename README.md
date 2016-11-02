@@ -10,6 +10,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
 - [Map to Consul](#map-to-consul)
 - [Consul to Map](#consul-to-map)
 - [Watch for key/value changes](#watch-for-keyvalue-changes)
+  - [Watch nested keys](#watch-nested-keys)
 - [Consul CRUD](#consul-crud)
   - [Adding to Consul](#adding-to-consul)
   - [Reading from Consul](#reading-from-consul)
@@ -121,9 +122,37 @@ watcher says: {:hubble/store spacecraft tape}
 
 ```clojure
 boot.user=> (stop store-watcher)
-true
 "stopping" "http://localhost:8500/v1/kv/hubble/store" "watcher"
+true
 ```
+
+### Watch Nested Keys
+
+In case you need to watch a hierarchy of keys (with all the nested keys), you can set a watcher on a local root key:
+
+```clojure
+boot.user=> (def hw (envoy/watch-path "http://localhost:8500/v1/kv/hubble"
+                                      #(println "watcher says:" %)))
+```
+
+notice this watcher is on the top most / root `/hubble` key.
+
+In this case _only the nested keys which values are changed_ will trigger notifications.
+
+Let's say we went to `hubble/mission` and changed it from "Horsehead Nebula" to "Butterfly Nebula":
+
+```clojure
+watcher says: {:hubble/mission Butterfly Nebula}
+```
+
+It can be stopped as any other watcher:
+
+```clojure
+boot.user=> (stop hw)
+"stopping" "http://localhost:8500/v1/kv/hubble?recurse" "watcher"
+true 
+```
+
 ## Consul CRUD
 
 ### Adding to Consul

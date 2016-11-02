@@ -1,5 +1,6 @@
 (ns envoy.core
   (:require [cheshire.core :as json]
+            [clojure.data :refer [diff]]
             [clojure.core.async :refer [go-loop go <! >! >!! alt! chan]]
             [org.httpkit.client :as http]
             [envoy.tools :refer [map->props props->map]])
@@ -42,7 +43,7 @@
 
 (defn- start-watcher [path fun stop?]
   (let [ch (chan)]
-    (go-loop [index nil]
+    (go-loop [index nil current (get-all path)]
              (http/get path
                        {:query-params {:index (or index (read-index path))}}
                        #(>!! ch %))
@@ -50,10 +51,12 @@
                stop? ([_]
                       (prn "stopping" path "watcher"))
                ch ([resp] 
-                   (let [new-idx (index-of resp)]
-                     (when (and index (not= new-idx index))  ;; first time there is no index
-                       (fun (read-values resp)))
-                     (recur new-idx)))))))
+                   (let [new-idx (index-of resp)
+                         new-vs (read-values resp)]
+                     (when (and index (not= new-idx index))               ;; first time there is no index
+                       (when-let [changes (first (diff new-vs current))]
+                         (fun changes)))
+                     (recur new-idx new-vs)))))))
 
 (defprotocol Stoppable
   (stop [this]))
