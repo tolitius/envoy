@@ -43,7 +43,7 @@
 (defn- start-watcher [path fun stop?]
   (let [ch (chan)]
     (go-loop [index (read-index path)]
-      (http/get path
+      (http/get (recurse path)
                 {:query-params {:index index}}
                 #(>!! ch %))
       (alt!
