@@ -169,7 +169,7 @@ boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
 {:opts {:method :delete, :url "http://localhost:8500/v1/kv/hubble/camera?recurse"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:59:26 GMT"}, :status 200}
 
 boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
-{:hubble/ nil, :hubble/mission "Horsehead Nebula", :hubble/store "spacecraft"}
+{:hubble/mission "Horsehead Nebula", :hubble/store "spacecraft://tape"}
 ```
 
 ## License
