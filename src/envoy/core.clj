@@ -1,7 +1,8 @@
 (ns envoy.core
   (:require [cheshire.core :as json]
             [clojure.core.async :refer [go-loop go <! >! >!! alt! chan]]
-            [org.httpkit.client :as http])
+            [org.httpkit.client :as http]
+            [envoy.tools :refer [map->props]])
   (:import [javax.xml.bind DatatypeConverter]))
 
 (defn- recurse [path]
@@ -60,3 +61,7 @@
   (let [stop-ch (chan)]
     (start-watcher path fun stop-ch)
     (Watcher. stop-ch)))
+
+(defn map->consul [kv-path m]
+  (doseq [[k v] (map->props m)]
+    (put (str kv-path "/" k) (str v))))

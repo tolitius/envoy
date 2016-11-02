@@ -6,7 +6,38 @@ boot.user=> (require '[envoy.core :as envoy :refer [stop]])
 nil
 ```
 
+### Map to Consul
+
+Since most Clojure configs are EDN maps, you can simply push the map to Consul with preserving the hierarchy:
+
+```clojure
+boot.user=> (def m {:hubble
+                    {:store "spacecraft://tape"
+                     :camera 
+                      {:mode "color"}
+                     :mission "Horsehead Nebula"}})
+
+boot.user=> (envoy/map->consul "http://localhost:8500/v1/kv" m)
+nil
+```
+
+done.
+
+you should see Consul logs confirming it happened:
+
+```bash
+2016/11/02 02:04:32 [DEBUG] http: Request PUT /v1/kv/hubble/mission (144.536µs) from=127.0.0.1:60189
+2016/11/02 02:04:32 [DEBUG] http: Request PUT /v1/kv/hubble/camera/mode (121.157µs) from=127.0.0.1:60189
+2016/11/02 02:04:32 [DEBUG] http: Request PUT /v1/kv/hubble/store (94.573µs) from=127.0.0.1:60189
+```
+
+and a visual:
+
+<p align="center"><img src="doc/img/map-to-consul.png"></p>
+
 ### Adding to Consul
+
+All this can be done manually by "puts" of course:
 
 ```clojure
 boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/mission" "Horsehead Nebula")
