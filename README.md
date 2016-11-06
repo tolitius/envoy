@@ -6,6 +6,8 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
 
 -
 
+[![Clojars Project](https://clojars.org/tolitius/envoy/latest-version.svg)](http://clojars.org/tolitius/envoy)
+
 - [How to play](#how-to-play)
 - [Map to Consul](#map-to-consul)
 - [Consul to Map](#consul-to-map)
