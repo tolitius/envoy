@@ -79,7 +79,11 @@ you may notice it comes directly from "the source" by looking at Consul logs:
 
 ## Watch for key/value changes
 
-Adding a watcher is simple: `(watch-path path fun)`
+Watching for kv changes with envoy _does not require_ to run a separate Consul Agent client or Consul Template and boils down to a simple function:
+
+```clojure
+(watch-path path fun)
+```
 
 `fun` is going to be called with a new value each time the `path`'s value is changed.
 
