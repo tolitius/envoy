@@ -13,6 +13,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
 - [Consul to Map](#consul-to-map)
 - [Watch for key/value changes](#watch-for-keyvalue-changes)
   - [Watch nested keys](#watch-nested-keys)
+  - [Watching the Watcher](#watching-the-watcher)
 - [Consul CRUD](#consul-crud)
   - [Adding to Consul](#adding-to-consul)
   - [Reading from Consul](#reading-from-consul)
@@ -154,6 +155,14 @@ boot.user=> (stop hw)
 "stopping" "http://localhost:8500/v1/kv/hubble?recurse" "watcher"
 true 
 ```
+
+### Watching the Watcher
+
+There is a [more visual example](https://github.com/tolitius/stater/tree/master/hubble#hubble) of envoy watchers that propagate notifications all the way to the browser:
+
+<img src="doc/img/hubble-mission.jpg" width="100%">
+
+Notification listner is just a function really, hence it can get propagated anywhere intergalactic computer system can reach.
 
 ## Consul CRUD
 
