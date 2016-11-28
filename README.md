@@ -18,6 +18,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
   - [Adding to Consul](#adding-to-consul)
   - [Reading from Consul](#reading-from-consul)
   - [Deleting from Consul](#deleting-from-consul)
+- [Options]
 - [License](#license)
 
 ## How to play
@@ -200,7 +201,7 @@ boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble/store")
 in case there is no need to convert keys to keywords, it can be disabled:
 
 ```clojure
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/" :keywordize? false)
+boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/" {:keywordize? false})
 {"hubble/camera/mode" "color",
  "hubble/mission" "Horsehead Nebula",
  "hubble/store" "spacecraft://tape"}
@@ -214,6 +215,18 @@ boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
 
 boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
 {:hubble/mission "Horsehead Nebula", :hubble/store "spacecraft://tape"}
+```
+
+## Options
+
+All commands take an optional map of options.
+
+For example, in case keys are protected by ACL, you can provide a token:
+
+```clojure
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
+                               {:token "4c308bb2-16a3-4061-b678-357de559624a"})
+{:hubble {:mission "Butterfly Nebula", :store "spacecraft://ssd"}}
 ```
 
 ## License

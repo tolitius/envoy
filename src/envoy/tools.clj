@@ -50,8 +50,15 @@
   (reduce (fn [m [k-path v]]
             (assoc-in m k-path v)) {} sys))
 
+(defn remove-nils [m]
+  (into {}
+        (remove
+          (comp nil? second)
+          m)))
+
 (defn props->map [read-from-consul]
-  (->> (for [[k v] (read-from-consul)]
+  (->> (for [[k v] (-> (read-from-consul)
+                       remove-nils)]
           [(key->path k #"/")
            (str->value v)])
        sys->map))
