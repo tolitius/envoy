@@ -18,7 +18,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
   - [Adding to Consul](#adding-to-consul)
   - [Reading from Consul](#reading-from-consul)
   - [Deleting from Consul](#deleting-from-consul)
-- [Options]
+- [Options](#options)
 - [License](#license)
 
 ## How to play
@@ -228,6 +228,8 @@ boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
                                {:token "4c308bb2-16a3-4061-b678-357de559624a"})
 {:hubble {:mission "Butterfly Nebula", :store "spacecraft://ssd"}}
 ```
+
+or any other Consul options.
 
 ## License
 
