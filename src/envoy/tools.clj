@@ -5,7 +5,8 @@
 (defn key->prop [k]
   (-> k 
       name 
-      (s/replace "-" "_")))
+      ;; (s/replace "-" "_")  ;; TODO: think about whether it is best to simply leave dashes alone
+      ))
 
 (defn link [connect from [to value]]
   (let [to (key->prop to)]
