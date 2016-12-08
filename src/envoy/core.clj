@@ -106,6 +106,6 @@
   ([path]
    (consul->map path {}))
   ([path ops]
-  (->> (partial get-all (str path "/")
+  (->> (partial get-all path
                         (merge ops {:keywordize? false}))
        props->map)))
