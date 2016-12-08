@@ -43,7 +43,7 @@
 
 (defn- key->path [k level]
   (as-> k $
-        (s/lower-case $)
+        ;; (s/lower-case $)
         (s/split $ level)
         (remove #{""} $)   ;; in case "/foo/bar" remove the result for the first slash
         (map keyword $)))
@@ -55,7 +55,9 @@
 (defn cpath->kpath
   "consul path to key path: i.e. \"/foo/bar/baz\" to [:foo :bar :baz]"
   [cpath]
-  (key->path cpath #"/"))
+  (if (seq cpath)
+    (key->path cpath #"/")
+    []))
 
 (defn remove-nils [m]
   (into {}
