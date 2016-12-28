@@ -40,7 +40,8 @@ boot.user=> (def m {:hubble
                     {:store "spacecraft://tape"
                      :camera 
                       {:mode "color"}
-                     :mission "Horsehead Nebula"}})
+                     :mission
+                      {:target "Horsehead Nebula"}}})
 
 boot.user=> (envoy/map->consul "http://localhost:8500/v1/kv" m)
 nil
@@ -51,9 +52,10 @@ done.
 you should see Consul logs confirming it happened:
 
 ```bash
-2016/11/02 02:04:32 [DEBUG] http: Request PUT /v1/kv/hubble/mission (144.536µs) from=127.0.0.1:60189
-2016/11/02 02:04:32 [DEBUG] http: Request PUT /v1/kv/hubble/camera/mode (121.157µs) from=127.0.0.1:60189
-2016/11/02 02:04:32 [DEBUG] http: Request PUT /v1/kv/hubble/store (94.573µs) from=127.0.0.1:60189
+2016/11/02 02:04:13 [DEBUG] http: Request PUT /v1/kv/hubble/mission/target? (337.69µs) from=127.0.0.1:39372
+2016/11/02 02:04:13 [DEBUG] http: Request GET /v1/kv/hubble?recurse&index=2114 (4m41.723665304s) from=127.0.0.1:39366
+2016/11/02 02:04:13 [DEBUG] http: Request PUT /v1/kv/hubble/camera/mode? (373.246µs) from=127.0.0.1:39372
+2016/11/02 02:04:13 [DEBUG] http: Request PUT /v1/kv/hubble/store? (1.607247ms) from=127.0.0.1:39372
 ```
 
 and a visual:
@@ -65,17 +67,17 @@ and a visual:
 In case a Clojure map with config read from Consul is needed it is just `consul->map` away:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv")
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/hubble")
 {:hubble
  {:camera {:mode "color"},
-  :mission "Horsehead Nebula",
+  :mission {:target "Horsehead Nebula"},
   :store "spacecraft://tape"}}
 ```
 
 you may notice it comes directly from "the source" by looking at Consul logs:
 
 ```bash
-2016/11/02 02:04:32 [DEBUG] http: Request GET /v1/kv/?recurse (76.386µs) from=127.0.0.1:54167
+2016/11/02 02:04:32 [DEBUG] http: Request GET /v1/kv/hubble?recurse (76.386µs) from=127.0.0.1:54167
 ```
 
 ## Watch for key/value changes
