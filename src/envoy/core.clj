@@ -3,7 +3,7 @@
             [clojure.data :refer [diff]]
             [clojure.core.async :refer [go-loop go <! >! >!! alt! chan]]
             [org.httpkit.client :as http]
-            [envoy.tools :refer [map->props props->map remove-nils cpath->kpath]])
+            [envoy.tools :refer [merge-maps map->props props->map remove-nils cpath->kpath]])
   (:import [javax.xml.bind DatatypeConverter]))
 
 (defn- recurse [path]
@@ -110,3 +110,8 @@
                         (merge ops {:keywordize? false}))
        props->map
        (get-in (cpath->kpath offset)))))
+
+(defn merge-with-consul [m path]
+  (if-let [consul (consul->map path)]
+    (merge-maps m consul)
+    m))

@@ -2,8 +2,8 @@
 
 (set-env!
   :source-paths #{"src"}
-  :dependencies '[[cheshire "5.6.3"]
-                  [org.clojure/core.async "0.2.395"]
+  :dependencies '[[cheshire "5.6.3" :exclusions [org.clojure/clojure]]
+                  [org.clojure/core.async "0.2.395" :exclusions [org.clojure/clojure]]
                   [http-kit "2.2.0"]
 
                   ;; boot clj
