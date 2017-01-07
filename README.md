@@ -165,7 +165,7 @@ true
 
 ### Watching the Watcher
 
-There is a [more visual example](https://github.com/tolitius/stater/tree/master/hubble#hubble) of envoy watchers that propagate notifications all the way to the browser:
+There is a [more visual example](https://github.com/tolitius/hubble) of envoy watchers that propagate notifications all the way to the browser:
 
 <img src="doc/img/hubble-mission.jpg" width="100%">
 

@@ -31,6 +31,7 @@
   ([resp]
    (read-values resp true))
   ([{:keys [body]} to-keys?]
+   (println "body => " body)
    (into {}
          (for [{:keys [Key Value]} (json/parse-string body true)]
            [(if to-keys? (keyword Key) Key)
@@ -40,6 +41,7 @@
   ([path v]
    (put path v {}))
   ([path v ops]
+   (println "@(http/put" path (merge {:body v} (with-ops ops)))
    @(http/put path (merge {:body v} (with-ops ops)))))
 
 (defn delete
