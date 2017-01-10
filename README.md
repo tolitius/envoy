@@ -18,6 +18,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
   - [Adding to Consul](#adding-to-consul)
   - [Reading from Consul](#reading-from-consul)
   - [Deleting from Consul](#deleting-from-consul)
+- [Merging Configurations](#merging-configurations)
 - [Options](#options)
 - [License](#license)
 
@@ -217,6 +218,24 @@ boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
 
 boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
 {:hubble/mission "Horsehead Nebula", :hubble/store "spacecraft://tape"}
+```
+
+## Merging Configurations
+
+Often there is an internal configuration some parts of which need to be overridden with values from Consul. Envoy has `merge-with-consul` function that does just that:
+
+```clojure
+(envoy/merge-with-consul config "http://localhost:8500/v1/kv/hubble")
+```
+
+will deep merge (with nested kvs) config with a map it'll read from Consul.
+
+In case a Consul space is protected by a token, or any other options need to be passed to Consul to read the overrides, they can be added in an optional map:
+
+```clojure
+(envoy/merge-with-consul config
+                         "http://localhost:8500/v1/kv/hubble"
+                         {:token "7a0f3b39-8871-e16e-2101-c1b30a911883"})
 ```
 
 ## Options
