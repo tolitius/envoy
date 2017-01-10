@@ -31,7 +31,7 @@
   ([resp]
    (read-values resp true))
   ([{:keys [body]} to-keys?]
-   (println "body => " body)
+   ;; (println "body => " body)
    (into {}
          (for [{:keys [Key Value]} (json/parse-string body true)]
            [(if to-keys? (keyword Key) Key)
@@ -41,7 +41,7 @@
   ([path v]
    (put path v {}))
   ([path v ops]
-   (println "@(http/put" path (merge {:body v} (with-ops ops)))
+   ;; (println "@(http/put" path (merge {:body v} (with-ops ops)))
    @(http/put path (merge {:body v} (with-ops ops)))))
 
 (defn delete
@@ -113,7 +113,10 @@
        props->map
        (get-in (cpath->kpath offset)))))
 
-(defn merge-with-consul [m path]
-  (if-let [consul (consul->map path)]
-    (merge-maps m consul)
-    m))
+(defn merge-with-consul
+  ([m path]
+   (merge-with-consul m path {}))
+  ([m path ops]
+   (if-let [consul (consul->map path ops)]
+     (merge-maps m consul)
+     m)))
