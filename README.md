@@ -4,7 +4,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
 
 > _The rank of Envoy was short for "Envoy Extraordinary and Minister Plenipotentiary", and was more commonly known as Minister. For example, the Envoy Extraordinary and Minister Plenipotentiary of the United States to the French Empire was known as the "United States Minister to France" and addressed as "Monsieur le Ministre."_
 
--
+<hr/>
 
 [![Clojars Project](https://clojars.org/tolitius/envoy/latest-version.svg)](http://clojars.org/tolitius/envoy)
 
