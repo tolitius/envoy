@@ -18,6 +18,9 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
   - [Adding to Consul](#adding-to-consul)
   - [Reading from Consul](#reading-from-consul)
   - [Deleting from Consul](#deleting-from-consul)
+- [Clone and Teleport](#clone-and-teleport)
+  - [Copy](#copy)
+  - [Move](#move)
 - [Merging Configurations](#merging-configurations)
 - [Options](#options)
 - [License](#license)
@@ -219,6 +222,89 @@ boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
 boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
 {:hubble/mission "Horsehead Nebula", :hubble/store "spacecraft://tape"}
 ```
+
+## Clone and Teleport
+
+It is often the case when configuration trees need to be copied or moved from one place to another, under a new root or a new nested path. `envoy` can do it with `copy` and `move` commands.
+
+### Copy
+
+Copying configuration from one place to another is done with a `copy` command:
+
+> => ```(envoy/copy kv-path from to)```
+
+Let's say we need to copy Hubble's mission (i.e. a "sub" config) under a new root "dev", so it lives under "/dev/hubble/mission" instead:
+
+```clojure
+boot.user=> (envoy/copy "http://localhost:8500/v1/kv" "/hubble/mission" "/dev/hubble/mission")
+```
+
+done. Let's read from this new "dev" root to make sure the mission is there:
+
+```clojure
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
+{:dev {:hubble {:mission {:target "Horsehead Foo"}}}}
+```
+
+great.
+
+We can of course copy the whole "hubble"'s config under "dev":
+
+```clojure
+boot.user=> (envoy/copy "http://localhost:8500/v1/kv" "/hubble" "/dev/hubble")
+```
+
+```clojure
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
+{:dev {:hubble {:camera {:mode "color"}, :mission {:target "Horsehead Nebula"}, :store "spacecraft tape"}}}
+```
+
+`copy` is really handy when you need to copy configurations between environments, or just need to copy some nested portion of the config.
+
+### Move
+
+A `move` command is exactly the same as the `copy`, but, as you would expect, it deletes the source after the copy is done.
+
+> => ```(envoy/copy kv-path from to)```
+
+The Hubble's development work is finished, and we are switching to work on the Kepler telescope. Let's say most of the configuration may be reused, so we'll just move Hubble's config to Kepler:
+
+```clojure
+boot.user=> (envoy/move "http://localhost:8500/v1/kv" "/hubble" "/kepler")
+```
+
+done.
+
+Oh, but we'll need "dev" and "qa" environments for Kepler's development. Let's move it again to live under "dev" root:
+
+```clojure
+boot.user=> (envoy/move "http://localhost:8500/v1/kv" "/kepler" "/dev/kepler")
+```
+
+and "copy" this config to "qa" before editing it:
+
+```clojure
+boot.user=> (envoy/copy "http://localhost:8500/v1/kv" "/dev/kepler" "/qa/kepler")
+```
+
+Let's look at Kepler's Consul universe:
+
+```clojure
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv")
+
+{:dev
+ {:kepler
+  {:mission {:target "Horsehead Nebula"},
+   :camera {:mode "color"},
+   :store "spacecraft tape"}},
+ :qa
+ {:kepler
+  {:mission {:target "Horsehead Nebula"},
+   :camera {:mode "color"},
+   :store "spacecraft tape"}}}
+```
+
+Niice, universe awaits...
 
 ## Merging Configurations
 
