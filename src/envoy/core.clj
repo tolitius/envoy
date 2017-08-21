@@ -128,13 +128,13 @@
 
 (defn move
   ([path from to]
-   (copy path from to {}))
-  ([path from to ops]
-   ;; consul->map :offset "from"
-   ;; update path with "to"
-   ;; map->consul "new map"
-   ;; remove a "from map"
-   ))
+   (move path from to {}))
+  ([path from to opts]
+   (let [dpath (str (tools/with-slash path)
+                    (-> (tools/without-slash from {:slash :first})
+                        (tools/with-slash)))]
+     (copy path from to opts)
+     (delete dpath opts))))
 
 (defn merge-with-consul
   ([m path]

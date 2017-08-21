@@ -100,14 +100,25 @@
           m
           (reverse prefix)))
 
-(defn with-slash [path]
+(defn with-slash
+  "adds a slash to the last position if it is not there"
+  [path]
   (let [c (last path)]
     (if (not= c \/)
       (str path "/")
       path)))
 
-(defn without-slash [path]
-  (let [c (last path)]
-    (if (= c \/)
-      (apply str (drop-last path))
-      path)))
+(defn without-slash
+  "removes slash from either ':first' or ':last' (default) position
+   in case it is there"
+  ([path]
+   (without-slash path {}))
+  ([path {:keys [slash]
+          :or {slash :last}}]
+   (let [[find-slash no-slash] (case slash
+                                 :last [last drop-last]
+                                 :first [first rest]
+                                 :not-first-or-last-might-need-to-implement)]
+     (if (= (find-slash path) \/)
+       (apply str (no-slash path))
+       path))))
