@@ -231,7 +231,7 @@ It is often the case when configuration trees need to be copied or moved from on
 
 Copying configuration from one place to another is done with a `copy` command:
 
-> => ```(envoy/copy kv-path from to)```
+> => _```(envoy/copy kv-path from to)```_
 
 Let's say we need to copy Hubble's mission (i.e. a "sub" config) under a new root "dev", so it lives under "/dev/hubble/mission" instead:
 
@@ -265,7 +265,7 @@ boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
 
 A `move` command is exactly the same as the `copy`, but, as you would expect, it deletes the source after the copy is done.
 
-> => ```(envoy/copy kv-path from to)```
+> => _```(envoy/move kv-path from to)```_
 
 The Hubble's development work is finished, and we are switching to work on the Kepler telescope. Let's say most of the configuration may be reused, so we'll just move Hubble's config to Kepler:
 
