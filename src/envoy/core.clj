@@ -3,7 +3,7 @@
             [clojure.data :refer [diff]]
             [clojure.core.async :refer [go-loop go <! >! >!! alt! chan]]
             [org.httpkit.client :as http]
-            [envoy.tools :refer [merge-maps map->props props->map remove-nils cpath->kpath]])
+            [envoy.tools :as tools])
   (:import [javax.xml.bind DatatypeConverter]))
 
 (defn- recurse [path]
@@ -15,7 +15,7 @@
       :x-consul-index))
 
 (defn- with-ops [ops]
-  {:query-params (remove-nils ops)})
+  {:query-params (tools/remove-nils ops)})
 
 (defn- read-index
   ([path]
@@ -56,7 +56,7 @@
    (get-all path {}))
   ([path {:keys [keywordize?] :as ops
           :or {keywordize? true}}]
-   (-> @(http/get (recurse path)
+   (-> @(http/get (recurse (tools/with-slash path))
                   (with-ops (dissoc ops :keywordize?)))
        (read-values keywordize?))))
 
@@ -101,8 +101,9 @@
   ([kv-path m]
    (map->consul kv-path m {}))
   ([kv-path m ops]
-   (doseq [[k v] (map->props m)]
-     (put (str kv-path "/" k) (str v) ops))))
+   (let [kv-path (tools/without-slash kv-path)]
+     (doseq [[k v] (tools/map->props m)]
+       (put (str kv-path "/" k) (str v) ops)))))
 
 (defn consul->map
   ([path]
@@ -110,13 +111,35 @@
   ([path {:keys [offset] :as ops}]
    (-> (partial get-all path
                         (merge ops {:keywordize? false}))
-       props->map
-       (get-in (cpath->kpath offset)))))
+       tools/props->map
+       (get-in (tools/cpath->kpath offset)))))
+
+(defn copy
+  ([path from to]
+   (copy path from to {}))
+  ([path from to opts]
+   (let [data (consul->map path
+                           (merge opts {:offset from}))
+         new-map (->> (tools/cpath->kpath to)
+                      (tools/nest-map data))]
+     (map->consul path
+                  new-map
+                  opts))))
+
+(defn move
+  ([path from to]
+   (copy path from to {}))
+  ([path from to ops]
+   ;; consul->map :offset "from"
+   ;; update path with "to"
+   ;; map->consul "new map"
+   ;; remove a "from map"
+   ))
 
 (defn merge-with-consul
   ([m path]
    (merge-with-consul m path {}))
   ([m path ops]
    (if-let [consul (consul->map path ops)]
-     (merge-maps m consul)
+     (tools/merge-maps m consul)
      m)))

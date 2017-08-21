@@ -90,3 +90,24 @@
 (defn merge-maps [& m]
   (apply deep-merge-with
          (fn [_ v] v) m))
+
+(defn nest-map
+  "given a prefix in a form of [:a :b :c] and a map, nests this map under
+  {:a {:b {:c m}}}"
+  [m prefix]
+  (reduce (fn [nested level]
+            {level nested})
+          m
+          (reverse prefix)))
+
+(defn with-slash [path]
+  (let [c (last path)]
+    (if (not= c \/)
+      (str path "/")
+      path)))
+
+(defn without-slash [path]
+  (let [c (last path)]
+    (if (= c \/)
+      (apply str (drop-last path))
+      path)))
