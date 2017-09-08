@@ -1,9 +1,9 @@
-(def +version+ "0.1.4-SNAPSHOT")
+(def +version+ "0.1.5")
 
 (set-env!
   :source-paths #{"src"}
-  :dependencies '[[cheshire "5.6.3" :exclusions [org.clojure/clojure]]
-                  [org.clojure/core.async "0.2.395" :exclusions [org.clojure/clojure]]
+  :dependencies '[[cheshire "5.8.0" :exclusions [org.clojure/clojure]]
+                  [org.clojure/core.async "0.3.443" :exclusions [org.clojure/clojure]]
                   [http-kit "2.2.0"]
 
                   ;; boot clj
