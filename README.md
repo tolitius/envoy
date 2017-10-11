@@ -11,6 +11,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
 - [How to play](#how-to-play)
 - [Map to Consul](#map-to-consul)
 - [Consul to Map](#consul-to-map)
+  - [Reading with an offset](#reading-with-an-offset)
 - [Watch for key/value changes](#watch-for-keyvalue-changes)
   - [Watch nested keys](#watch-nested-keys)
   - [Watching the Watcher](#watching-the-watcher)
@@ -83,6 +84,19 @@ you may notice it comes directly from "the source" by looking at Consul logs:
 ```bash
 2016/11/02 02:04:32 [DEBUG] http: Request GET /v1/kv/hubble?recurse (76.386µs) from=127.0.0.1:54167
 ```
+
+### Reading with an offset
+
+You may also read from consul at a certain `:offset` by specifying it in options.
+
+Let's say we need to get everything that lives under the `hubble/mission`:
+
+```clojure
+boot.user=> (envoy/consul->map "http://dev-server:8500/v1/kv" {:offset "hubble/mission"})
+{:target "Horsehead Nebula"}
+```
+
+Specifying an offset is really useful for multiple environments or teams living in the same consul / acl.
 
 ## Watch for key/value changes
 
