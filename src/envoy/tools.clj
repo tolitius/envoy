@@ -60,10 +60,13 @@
     []))
 
 (defn remove-nils [m]
-  (into {}
-        (remove
-          (comp nil? second)
-          m)))
+  (let [remove? (fn [v]
+                  (or (nil? v)
+                      (= "null" v)))]
+    (into {}
+          (remove
+            (comp remove? second)
+            m))))
 
 (defn props->map [read-from-consul]
   (->> (for [[k v] (-> (read-from-consul)
