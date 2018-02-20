@@ -3,8 +3,8 @@
             [clojure.edn :as edn]))
 
 (defn key->prop [k]
-  (-> k 
-      name 
+  (-> k
+      name
       ;; (s/replace "-" "_")  ;; TODO: think about whether it is best to simply leave dashes alone
       ))
 
@@ -13,12 +13,17 @@
     [(str from connect to) value]))
 
 (defn- map->flat [m key->x connect]
-  (reduce-kv (fn [path k v] 
-               (if (map? v)
-                 (concat (map (partial link connect (key->x k))
-                              (map->flat v key->x connect))
-                         path)
-                 (conj path [(key->x k) v])))
+  (reduce-kv (fn [path k v]
+               (cond
+                 (map? v)  (concat (map
+                                    (partial link connect (key->x k))
+                                    (map->flat v key->x connect))
+                                        path)
+                 (or (vector? v) (seq? v)) (concat (map
+                                          (partial link connect (key->x k))
+                                          (map->flat (into {} (map-indexed (fn [a b] [(str a) b]) v)) key->x connect))
+                                          path)
+                 :else (conj path [(key->x k) v])))
              [] m))
 
 (defn map->props [m]
@@ -33,7 +38,7 @@
     (re-matches #"^(true|false)$" v) (Boolean/parseBoolean v)
     (re-matches #"\w+" v) v
     :else
-    (try 
+    (try
       (let [parsed (edn/read-string v)]
         (if (symbol? parsed)
           v
