@@ -3,8 +3,8 @@
             [clojure.edn :as edn]))
 
 (defn key->prop [k]
-  (-> k 
-      name 
+  (-> k
+      name
       ;; (s/replace "-" "_")  ;; TODO: think about whether it is best to simply leave dashes alone
       ))
 
@@ -13,12 +13,17 @@
     [(str from connect to) value]))
 
 (defn- map->flat [m key->x connect]
-  (reduce-kv (fn [path k v] 
-               (if (map? v)
-                 (concat (map (partial link connect (key->x k))
-                              (map->flat v key->x connect))
-                         path)
-                 (conj path [(key->x k) v])))
+  (reduce-kv (fn [path k v]
+               (cond
+                 (map? v)  (concat (map
+                                    (partial link connect (key->x k))
+                                    (map->flat v key->x connect))
+                                        path)
+                 (or (vector? v) (seq? v)) (concat (map
+                                          (partial link connect (key->x k))
+                                          (map->flat (into {} (map-indexed (fn [a b] [(str a) b]) v)) key->x connect))
+                                          path)
+                 :else (conj path [(key->x k) v])))
              [] m))
 
 (defn map->props [m]
@@ -33,7 +38,7 @@
     (re-matches #"^(true|false)$" v) (Boolean/parseBoolean v)
     (re-matches #"\w+" v) v
     :else
-    (try 
+    (try
       (let [parsed (edn/read-string v)]
         (if (symbol? parsed)
           v
@@ -51,6 +56,41 @@
 (defn- sys->map [sys]
   (reduce (fn [m [k-path v]]
             (assoc-in m k-path v)) {} sys))
+
+(defn- long-indexed-map?
+    [lim]
+    (reduce (fn [bool [k v]]
+                (try
+                    (Long/parseLong (name k))
+                    true
+                    (catch Exception e
+                        (reduced false)))) true lim))
+
+(defn- long-indexed-map->vec
+  [lim]
+   (let [lim-size (count lim)]
+    (loop [res []
+           idx 0]
+      (if (= idx lim-size)
+        res
+        (do
+          (recur (conj res ((keyword (str idx)) lim)) (inc idx)))))))
+
+(defn- normalize-map
+  [map]
+  (loop [res {}
+         kvlist (into [] map)]
+      (if-let [[k v] (first kvlist)]
+          (cond
+              (and (map? v) (long-indexed-map? v))
+                        (recur
+                            (assoc res k (long-indexed-map->vec (normalize-map v)))
+                            (rest kvlist))
+              (map? v) (recur
+                         (assoc res k (normalize-map v))
+                         (rest kvlist))
+              :else (recur (assoc res k v) (rest kvlist)))
+         res)))
 
 (defn cpath->kpath
   "consul path to key path: i.e. \"/foo/bar/baz\" to [:foo :bar :baz]"
@@ -73,7 +113,8 @@
                        remove-nils)]
           [(key->path k #"/")
            (str->value v)])
-       sys->map))
+       sys->map
+       normalize-map))
 
 ;; author of "deep-merge-with" is Chris Chouser: https://github.com/clojure/clojure-contrib/commit/19613025d233b5f445b1dd3460c4128f39218741
 (defn deep-merge-with
