@@ -57,6 +57,41 @@
   (reduce (fn [m [k-path v]]
             (assoc-in m k-path v)) {} sys))
 
+(defn- long-indexed-map?
+    [lim]
+    (reduce (fn [bool [k v]]
+                (try
+                    (Long/parseLong (name k))
+                    true
+                    (catch Exception e
+                        (reduced false)))) true lim))
+
+(defn- long-indexed-map->vec
+  [lim]
+   (let [lim-size (count lim)]
+    (loop [res []
+           idx 0]
+      (if (= idx lim-size)
+        res
+        (do
+          (recur (conj res ((keyword (str idx)) lim)) (inc idx)))))))
+
+(defn- normalize-map
+  [map]
+  (loop [res {}
+         kvlist (into [] map)]
+      (if-let [[k v] (first kvlist)]
+          (cond
+              (and (map? v) (long-indexed-map? v))
+                        (recur
+                            (assoc res k (long-indexed-map->vec (normalize-map v)))
+                            (rest kvlist))
+              (map? v) (recur
+                         (assoc res k (normalize-map v))
+                         (rest kvlist))
+              :else (recur (assoc res k v) (rest kvlist)))
+         res)))
+
 (defn cpath->kpath
   "consul path to key path: i.e. \"/foo/bar/baz\" to [:foo :bar :baz]"
   [cpath]
@@ -78,7 +113,8 @@
                        remove-nils)]
           [(key->path k #"/")
            (str->value v)])
-       sys->map))
+       sys->map
+       normalize-map))
 
 ;; author of "deep-merge-with" is Chris Chouser: https://github.com/clojure/clojure-contrib/commit/19613025d233b5f445b1dd3460c4128f39218741
 (defn deep-merge-with
