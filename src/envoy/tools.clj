@@ -1,10 +1,11 @@
 (ns envoy.tools
-  (:require [clojure.string :as s]
+  (:require [cheshire.core :as json]
+            [clojure.string :as s]
             [clojure.edn :as edn]))
 
 (defn key->prop [k]
-  (-> k 
-      name 
+  (-> k
+      name
       ;; (s/replace "-" "_")  ;; TODO: think about whether it is best to simply leave dashes alone
       ))
 
@@ -13,12 +14,17 @@
     [(str from connect to) value]))
 
 (defn- map->flat [m key->x connect]
-  (reduce-kv (fn [path k v] 
-               (if (map? v)
+  (reduce-kv (fn [path k v]
+               (cond
+                 (map? v)
                  (concat (map (partial link connect (key->x k))
                               (map->flat v key->x connect))
                          path)
-                 (conj path [(key->x k) v])))
+                 (or (vector? v) (seq? v)) (conj path
+                                                 [(key->x k) (try
+                                                                (json/generate-string (vec v))
+                                                                (catch Throwable _ v))])
+                 :else (conj path [(key->x k) v])))
              [] m))
 
 (defn map->props [m]
@@ -33,13 +39,18 @@
     (re-matches #"^(true|false)$" v) (Boolean/parseBoolean v)
     (re-matches #"\w+" v) v
     :else
-    (try 
-      (let [parsed (edn/read-string v)]
-        (if (symbol? parsed)
-          v
-          parsed))
+    (try
+      ;;default json no symbol
+      (json/parse-string-strict v true)
          (catch Throwable _
-           v))))
+         ;;fallback to edn for compatibility
+         (try
+           (let [parsed (edn/read-string v true)]
+             (if (symbol? parsed)
+               v
+               parsed))
+          (catch Throwable _
+                v))))))
 
 (defn- key->path [k level]
   (as-> k $
