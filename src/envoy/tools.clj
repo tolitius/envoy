@@ -20,7 +20,7 @@
                  (concat (map (partial link connect (key->x k))
                               (map->flat v key->x connect))
                          path)
-                 (or (sequential? v)) (conj path
+                 (sequential? v) (conj path
                                                  [(key->x k) (try
                                                                 (json/generate-string (vec v))
                                                                 (catch Throwable _ v))])
