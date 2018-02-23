@@ -20,7 +20,7 @@
                  (concat (map (partial link connect (key->x k))
                               (map->flat v key->x connect))
                          path)
-                 (or (vector? v) (seq? v)) (conj path
+                 (or (sequential? v)) (conj path
                                                  [(key->x k) (try
                                                                 (json/generate-string (vec v))
                                                                 (catch Throwable _ v))])
@@ -45,7 +45,7 @@
          (catch Throwable _
          ;;fallback to edn for compatibility
          (try
-           (let [parsed (edn/read-string v true)]
+           (let [parsed (edn/read-string v)]
              (if (symbol? parsed)
                v
                parsed))
