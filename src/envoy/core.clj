@@ -97,29 +97,20 @@
     (start-watcher (recurse path) fun stop-ch ops)
     (Watcher. stop-ch))))
 
-(defn- mk-ops
-    [ops-1 ops-2]
-    (cond
-        (map? ops-1) [ops-1 ops-2]
-        (map? ops-2) [ops-2 ops-1]
-        (keyword? ops-1) [{} ops-1]
-        (keyword? ops-2) [{} ops-2]
-        :else [{} :edn]))
-
 (defn map->consul
-  [kv-path m & [ops-1 ops-2]]
-   (let [kv-path (tools/without-slash kv-path)
-         [ops serializer] (mk-ops ops-1 ops-2)]
+  [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
+   (let [kv-path (tools/without-slash kv-path)]
      (doseq [[k v] (tools/map->props m serializer)]
-       (put (str kv-path "/" k) (str v) ops))))
+       (put (str kv-path "/" k) (str v) (dissoc ops :serializer)))))
 
 (defn consul->map
-  [path & [ops-1 ops-2]]
-   (let [[{:keys [offset] :as ops} serializer] (mk-ops ops-1 ops-2)]
+  [path & [{:keys [serializer offset] :or {serializer :edn} :as ops}]]
    (-> (partial get-all path
-                        (merge ops {:keywordize? false}))
+                        (merge
+                            (dissoc ops :serializer :offset)
+                            {:keywordize? false}))
        (tools/props->map serializer)
-       (get-in (tools/cpath->kpath offset)))))
+       (get-in (tools/cpath->kpath offset))))
 
 (defn copy
   ([path from to]
