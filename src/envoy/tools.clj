@@ -27,7 +27,8 @@
                  (concat (map (partial link connect (key->x k))
                               (map->flat v key->x connect serializer))
                          path)
-                 (sequential? v) (conj path [(key->x k) (serialize v serializer)])
+                 (sequential? v) (conj path [(key->x k)
+                                             (serialize v serializer)])
                  :else (conj path [(key->x k) v])))
              [] m))
 
