@@ -27,7 +27,7 @@
 (defn- fromBase64 [s]
   (String. (DatatypeConverter/parseBase64Binary s)))
 
-(defn- read-values 
+(defn- read-values
   ([resp]
    (read-values resp true))
   ([{:keys [body]} to-keys?]
@@ -37,7 +37,7 @@
            [(if to-keys? (keyword Key) Key)
             (when Value (fromBase64 Value))]))))
 
-(defn put 
+(defn put
   ([path v]
    (put path v {}))
   ([path v ops]
@@ -97,21 +97,28 @@
     (start-watcher (recurse path) fun stop-ch ops)
     (Watcher. stop-ch))))
 
+(defn- mk-ops
+    [ops-1 ops-2]
+    (cond
+        (map? ops-1) [ops-1 ops-2]
+        (map? ops-2) [ops-2 ops-1]
+        (keyword? ops-1) [{} ops-1]
+        (keyword? ops-2) [{} ops-2]
+        :else [{} :edn]))
+
 (defn map->consul
-  ([kv-path m]
-   (map->consul kv-path m {}))
-  ([kv-path m ops]
-   (let [kv-path (tools/without-slash kv-path)]
-     (doseq [[k v] (tools/map->props m)]
-       (put (str kv-path "/" k) (str v) ops)))))
+  [kv-path m & [ops-1 ops-2]]
+   (let [kv-path (tools/without-slash kv-path)
+         [ops serializer] (mk-ops ops-1 ops-2)]
+     (doseq [[k v] (tools/map->props m serializer)]
+       (put (str kv-path "/" k) (str v) ops))))
 
 (defn consul->map
-  ([path]
-   (consul->map path {}))
-  ([path {:keys [offset] :as ops}]
+  [path & [ops-1 ops-2]]
+   (let [[{:keys [offset] :as ops} serializer] (mk-ops ops-1 ops-2)]
    (-> (partial get-all path
                         (merge ops {:keywordize? false}))
-       tools/props->map
+       (tools/props->map serializer)
        (get-in (tools/cpath->kpath offset)))))
 
 (defn copy

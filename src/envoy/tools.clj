@@ -13,24 +13,43 @@
   (let [to (key->prop to)]
     [(str from connect to) value]))
 
-(defn- map->flat [m key->x connect]
+(defn- serialize
+    [v serializer]
+    (condp = serializer
+        :edn (str (vec v))
+        :json (json/generate-string (vec v))
+        (serialize v :edn)))
+
+(defn- map->flat [m key->x connect & [serializer]]
   (reduce-kv (fn [path k v]
                (cond
                  (map? v)
                  (concat (map (partial link connect (key->x k))
-                              (map->flat v key->x connect))
+                              (map->flat v key->x connect serializer))
                          path)
-                 (sequential? v) (conj path
-                                                 [(key->x k) (try
-                                                                (json/generate-string (vec v))
-                                                                (catch Throwable _ v))])
+                 (sequential? v) (conj path [(key->x k) (serialize v serializer)])
                  :else (conj path [(key->x k) v])))
              [] m))
 
-(defn map->props [m]
-  (map->flat m key->prop "/"))
+(defn map->props [m & [serializer]]
+  (map->flat m key->prop "/" serializer))
 
-(defn- str->value [v]
+(defn- deserialize
+  [v serializer]
+  (condp = serializer
+      :edn (try
+            (let [parsed (read-string v)]
+                (if (symbol? parsed)
+                    v
+                    parsed))
+            (catch Throwable _
+             v))
+      :json (try
+                (json/parse-string-strict v true)
+                (catch Throwable _ v))
+      (deserialize v :edn)))
+
+(defn- str->value [v & [deserializer]]
   "consul values are strings. str->value will convert:
   the numbers to longs, the alphanumeric values to strings, and will use Clojure reader for the rest
   in case reader can't read OR it reads a symbol, the value will be returned as is (a string)"
@@ -38,19 +57,7 @@
     (re-matches #"[0-9]+" v) (Long/parseLong v)
     (re-matches #"^(true|false)$" v) (Boolean/parseBoolean v)
     (re-matches #"\w+" v) v
-    :else
-    (try
-      ;;default json no symbol
-      (json/parse-string-strict v true)
-         (catch Throwable _
-         ;;fallback to edn for compatibility
-         (try
-           (let [parsed (edn/read-string v)]
-             (if (symbol? parsed)
-               v
-               parsed))
-          (catch Throwable _
-                v))))))
+    :else (deserialize v deserializer)))
 
 (defn- key->path [k level]
   (as-> k $
@@ -79,11 +86,11 @@
             (comp remove? second)
             m))))
 
-(defn props->map [read-from-consul]
+(defn props->map [read-from-consul & [deserializer]]
   (->> (for [[k v] (-> (read-from-consul)
                        remove-nils)]
           [(key->path k #"/")
-           (str->value v)])
+           (str->value v deserializer)])
        sys->map))
 
 ;; author of "deep-merge-with" is Chris Chouser: https://github.com/clojure/clojure-contrib/commit/19613025d233b5f445b1dd3460c4128f39218741
