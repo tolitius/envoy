@@ -20,6 +20,15 @@
         :json (json/generate-string (vec v))
         (serialize v :edn)))
 
+(defn serialize-map
+    [m & [serializer]]
+    (reduce-kv (fn [acc k v]
+        (cond
+            (map? v) (assoc acc k (serialize-map v serializer))
+            (sequential? v) (assoc acc k (serialize v serializer))
+            :else (assoc acc k (str v))))
+        {} m))
+
 (defn- map->flat [m key->x connect & [serializer]]
   (reduce-kv (fn [path k v]
                (cond

@@ -108,18 +108,23 @@
        (get-in (tools/cpath->kpath offset))))
 
 (defn- update-consul
-    [kv-path m & [{:keys [serializer update] :or {serializer :edn udpate false} :as ops}]]
+    [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
     (let [[consul-url sub-path]  (string/split kv-path #"kv" 2)
           update-kv-path (str consul-url "kv")
           kpath (tools/cpath->kpath sub-path)
           stored-map (reduce (fn [acc [k v]]
                                (merge acc (consul->map (str kv-path "/" (name k)))))
                                {} m)
-          [to-add to-remove _] (diff m (get-in stored-map kpath))]
+         ;;to update correctly seq we need to pre-serialize map
+          [to-add to-remove _] (diff (tools/serialize-map m serializer)
+                                    (tools/serialize-map (get-in stored-map kpath) serializer))]
+         ;;add
          (doseq [[k v] (tools/map->props to-add serializer)]
              (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
+         ;;remove
          (doseq [[k v] (tools/map->props to-remove serializer)]
-             @(http/delete (str kv-path "/" k)))))
+            (when-not (get-in to-add (tools/cpath->kpath k) false)
+                @(http/delete (str kv-path "/" k))))))
 
 (defn map->consul
   [kv-path m & [{:keys [serializer update] :or {serializer :edn udpate false} :as ops}]]
