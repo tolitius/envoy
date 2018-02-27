@@ -113,7 +113,7 @@
           update-kv-path (str consul-url "kv")
           kpath (tools/cpath->kpath sub-path)
           stored-map (reduce (fn [acc [k v]]
-                               (merge acc (consul->map (str kv-path "/" (name k)))))
+                               (merge acc (consul->map (str kv-path "/" (name k)) serializer)))
                                {} m)
          ;;to update correctly seq we need to pre-serialize map
           [to-add to-remove _] (diff (tools/serialize-map m serializer)
