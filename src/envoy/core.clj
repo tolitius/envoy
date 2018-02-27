@@ -3,7 +3,8 @@
             [clojure.data :refer [diff]]
             [clojure.core.async :refer [go-loop go <! >! >!! alt! chan]]
             [org.httpkit.client :as http]
-            [envoy.tools :as tools])
+            [envoy.tools :as tools]
+            [clojure.string :as string])
   (:import [javax.xml.bind DatatypeConverter]))
 
 (defn- recurse [path]
@@ -97,12 +98,6 @@
     (start-watcher (recurse path) fun stop-ch ops)
     (Watcher. stop-ch))))
 
-(defn map->consul
-  [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
-   (let [kv-path (tools/without-slash kv-path)]
-     (doseq [[k v] (tools/map->props m serializer)]
-       (put (str kv-path "/" k) (str v) (dissoc ops :serializer)))))
-
 (defn consul->map
   [path & [{:keys [serializer offset] :or {serializer :edn} :as ops}]]
    (-> (partial get-all path
@@ -111,6 +106,28 @@
                             {:keywordize? false}))
        (tools/props->map serializer)
        (get-in (tools/cpath->kpath offset))))
+
+(defn- update-consul
+    [kv-path m & [{:keys [serializer update] :or {serializer :edn udpate false} :as ops}]]
+    (let [[consul-url sub-path]  (string/split kv-path #"kv" 2)
+          update-kv-path (str consul-url "kv")
+          kpath (tools/cpath->kpath sub-path)
+          stored-map (reduce (fn [acc [k v]]
+                               (merge acc (consul->map (str kv-path "/" (name k)))))
+                               {} m)
+          [to-add to-remove _] (diff m (get-in stored-map kpath))]
+         (doseq [[k v] (tools/map->props to-add serializer)]
+             (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
+         (doseq [[k v] (tools/map->props to-remove serializer)]
+             @(http/delete (str kv-path "/" k)))))
+
+(defn map->consul
+  [kv-path m & [{:keys [serializer update] :or {serializer :edn udpate false} :as ops}]]
+  (let [kv-path (tools/without-slash kv-path)]
+    (if-not update
+       (doseq [[k v] (tools/map->props m serializer)]
+          (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
+       (update-consul kv-path m ops))))
 
 (defn copy
   ([path from to]
