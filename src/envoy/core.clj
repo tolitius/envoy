@@ -123,7 +123,7 @@
              (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
          ;;remove
          (doseq [[k v] (tools/map->props to-remove serializer)]
-            (when-not (get-in to-add (tools/cpath->kpath k) false)
+            (when (nil? (get-in to-add (tools/cpath->kpath k) nil))
                 @(http/delete (str kv-path "/" k))))))
 
 (defn map->consul
