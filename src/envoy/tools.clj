@@ -139,6 +139,10 @@
       (str path "/")
       path)))
 
+(defn clean-slash
+    [path]
+    (s/join "/"(remove #{""} (s/split path #"/"))))
+
 (defn without-slash
   "removes slash from either ':first' or ':last' (default) position
    in case it is there"
@@ -146,10 +150,12 @@
    (without-slash path {}))
   ([path {:keys [slash]
           :or {slash :last}}]
-   (let [[find-slash no-slash] (case slash
+    (if-not (= :both slash)
+        (let [[find-slash no-slash] (case slash
                                  :last [last drop-last]
                                  :first [first rest]
                                  :not-first-or-last-might-need-to-implement)]
-     (if (= (find-slash path) \/)
-       (apply str (no-slash path))
-       path))))
+          (if (= (find-slash path) \/)
+            (apply str (no-slash path))
+            path))
+       (clean-slash path))))

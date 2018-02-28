@@ -38,6 +38,26 @@
            [(if to-keys? (keyword Key) Key)
             (when Value (fromBase64 Value))]))))
 
+(defn- round-robin
+  [hosts state]
+  (if (= 0 (mod @state (count hosts)))
+    (do (reset! state 0)
+      (get hosts 0))
+    (do (swap! state inc)
+      (get hosts (- @state 1)))))
+
+(defn client
+  "Create an envoy kv-path builder"
+  [{:keys [hosts port secure?]
+    :or {hosts ["localhost"] port 8500 secure? false}
+    :as conf}]
+  (let [proto (if secure? "https://" "http://")
+        state-rr (atom 0)]
+    (fn [& [path]]
+      (let [host (round-robin hosts state-rr)]
+      (str proto host ":" port "/v1/kv" (when-not (or (nil? path) (= "" path))
+                                            (str "/" (tools/clean-slash path))))))))
+
 (defn put
   ([path v]
    (put path v {}))
