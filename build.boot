@@ -1,4 +1,4 @@
-(def +version+ "0.1.7")
+(def +version+ "0.1.8")
 
 (set-env!
   :source-paths #{"src"}
@@ -7,7 +7,7 @@
                   [http-kit "2.2.0"]
 
                   ;; boot clj
-                  [boot/core              "2.6.0"           :scope "provided"]
+                  [boot/core              "2.7.2"           :scope "provided"]
                   [adzerk/bootlaces       "0.1.13"          :scope "test"]])
 
 (require '[adzerk.bootlaces :refer :all])
