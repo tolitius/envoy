@@ -38,25 +38,22 @@
            [(if to-keys? (keyword Key) Key)
             (when Value (fromBase64 Value))]))))
 
-(defn- round-robin
-  [hosts state]
-  (if (= 0 (mod @state (count hosts)))
-    (do (reset! state 0)
-      (get hosts 0))
-    (do (swap! state inc)
-      (get hosts (- @state 1)))))
+(defn- find-consul-node [hosts]
+     (let [at (atom -1)]
+       #(nth hosts (mod (swap! at inc)
+                        (count hosts)))))
 
-(defn client
+(defn url-builder
   "Create an envoy kv-path builder"
   [{:keys [hosts port secure?]
     :or {hosts ["localhost"] port 8500 secure? false}
     :as conf}]
   (let [proto (if secure? "https://" "http://")
-        state-rr (atom 0)]
+        consul-node (find-consul-node hosts)]
     (fn [& [path]]
-      (let [host (round-robin hosts state-rr)]
-      (str proto host ":" port "/v1/kv" (when-not (or (nil? path) (= "" path))
-                                            (str "/" (tools/clean-slash path))))))))
+      (let [node (consul-node)]
+      (str proto node ":" port "/v1/kv" (when (seq path)
+                                          (str "/" (tools/clean-slash path))))))))
 
 (defn put
   ([path v]
@@ -127,7 +124,7 @@
        (tools/props->map serializer)
        (get-in (tools/cpath->kpath offset))))
 
-(defn- update-consul
+(defn- overwrite-with
     [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
     (let [[consul-url sub-path]  (string/split kv-path #"kv" 2)
           update-kv-path (str consul-url "kv")
@@ -149,12 +146,12 @@
                 @(http/delete (str kv-path "/" k))))))
 
 (defn map->consul
-  [kv-path m & [{:keys [serializer update] :or {serializer :edn udpate false} :as ops}]]
+  [kv-path m & [{:keys [serializer overwrite?] :or {serializer :edn overwrite? false} :as ops}]]
   (let [kv-path (tools/without-slash kv-path)]
-    (if-not update
+    (if-not overwrite?
        (doseq [[k v] (tools/map->props m serializer)]
           (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
-       (update-consul kv-path m ops))))
+       (overwrite-with kv-path m ops))))
 
 (defn copy
   ([path from to]
