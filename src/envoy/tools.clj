@@ -20,6 +20,15 @@
         :json (json/generate-string (vec v))
         (serialize v :edn)))
 
+(defn serialize-map
+    [m & [serializer]]
+    (reduce-kv (fn [acc k v]
+        (cond
+            (map? v) (assoc acc k (serialize-map v serializer))
+            (sequential? v) (assoc acc k (serialize v serializer))
+            :else (assoc acc k (str v))))
+        {} m))
+
 (defn- map->flat [m key->x connect & [serializer]]
   (reduce-kv (fn [path k v]
                (cond
@@ -130,6 +139,10 @@
       (str path "/")
       path)))
 
+(defn clean-slash
+    [path]
+    (s/join "/"(remove #{""} (s/split path #"/"))))
+
 (defn without-slash
   "removes slash from either ':first' or ':last' (default) position
    in case it is there"
@@ -137,10 +150,12 @@
    (without-slash path {}))
   ([path {:keys [slash]
           :or {slash :last}}]
-   (let [[find-slash no-slash] (case slash
+    (if-not (= :both slash)
+        (let [[find-slash no-slash] (case slash
                                  :last [last drop-last]
                                  :first [first rest]
                                  :not-first-or-last-might-need-to-implement)]
-     (if (= (find-slash path) \/)
-       (apply str (no-slash path))
-       path))))
+          (if (= (find-slash path) \/)
+            (apply str (no-slash path))
+            path))
+       (clean-slash path))))
