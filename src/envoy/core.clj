@@ -60,7 +60,10 @@
    (put path v {}))
   ([path v ops]
    ;; (println "@(http/put" path (merge {:body v} (with-ops ops)))
-   @(http/put path (merge {:body v} (with-ops ops)))))
+   (let [{:keys [status] :as resp} @(http/put path (merge {:body v}
+                                                             (with-ops ops)))]
+     (when-not (= 200 status)
+       (throw (RuntimeException. (str "could not PUT to consul due to: " resp)))))))
 
 (defn delete
   ([path]
