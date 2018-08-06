@@ -77,7 +77,9 @@
         (map keyword $)))
 
 (defn- sys->map [sys]
+  (println "sys:" sys)
   (reduce (fn [m [k-path v]]
+            (println "get-in m:" m "k-path:" k-path)
             (assoc-in m k-path v)) {} sys))
 
 (defn cpath->kpath
@@ -159,3 +161,8 @@
             (apply str (no-slash path))
             path))
        (clean-slash path))))
+
+(defn concat-with-slash [s1 s2]
+  (str (without-slash s1)
+       "/"
+       (without-slash s2 {:slash :first})))

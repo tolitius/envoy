@@ -120,12 +120,13 @@
 
 (defn consul->map
   [path & [{:keys [serializer offset] :or {serializer :edn} :as ops}]]
-   (-> (partial get-all path
-                        (merge
-                            (dissoc ops :serializer :offset)
-                            {:keywordize? false}))
-       (tools/props->map serializer)
-       (get-in (tools/cpath->kpath offset))))
+  (let [full-path (if offset
+                    (tools/concat-with-slash path offset)
+                    path)]
+    (-> (partial get-all full-path (merge
+                                     (dissoc ops :serializer :offset)
+                                     {:keywordize? false}))
+        (tools/props->map serializer))))
 
 (defn- overwrite-with
     [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
