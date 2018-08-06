@@ -77,9 +77,7 @@
         (map keyword $)))
 
 (defn- sys->map [sys]
-  (println "sys:" sys)
   (reduce (fn [m [k-path v]]
-            (println "get-in m:" m "k-path:" k-path)
             (assoc-in m k-path v)) {} sys))
 
 (defn cpath->kpath
