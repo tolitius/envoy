@@ -33,12 +33,12 @@
 
 (defn -main [& args]
   (let [{:keys [consul-host consul-port edn-file options location]} (parse-args args)
-        consult-url (str "http://" consul-host ":" consul-port "/v1/kv" location)
+        consul-url (str "http://" consul-host ":" consul-port "/v1/kv" location)
         options (edn/read-string options)]
-    (println (str "copying from consul on \"" consult-url
+    (println (str "copying from consul on \"" consul-url
                   "\" to \"" edn-file "\" file, with options: " options))
     (try
-      (->> (envoy/consul->map consult-url options)
+      (->> (envoy/consul->map consul-url options)
            (spit edn-file))
       (catch Exception e
         (exit! (.getMessage e))))))
