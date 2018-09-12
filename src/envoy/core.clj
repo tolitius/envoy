@@ -119,14 +119,17 @@
     (Watcher. stop-ch))))
 
 (defn consul->map
-  [path & [{:keys [serializer offset] :or {serializer :edn} :as ops}]]
+  [path & [{:keys [serializer offset preserve-offset] :or {serializer :edn} :as ops}]]
   (let [full-path (if offset
                     (tools/concat-with-slash path offset)
-                    path)]
-    (-> (partial get-all full-path (merge
-                                     (dissoc ops :serializer :offset)
+                    path)
+        consul-map (-> (partial get-all full-path (merge
+                                     (dissoc ops :serializer :offset :preserve-offset)
                                      {:keywordize? false}))
-        (tools/props->map serializer))))
+                       (tools/props->map serializer))]
+       (if preserve-offset
+         consul-map
+         (get-in consul-map (tools/cpath->kpath offset)))))
 
 (defn- overwrite-with
     [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
