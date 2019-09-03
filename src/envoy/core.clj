@@ -31,12 +31,13 @@
 (defn- read-values
   ([resp]
    (read-values resp true))
-  ([{:keys [body]} to-keys?]
-   ;; (println "body => " body)
-   (into {}
-         (for [{:keys [Key Value]} (json/parse-string body true)]
-           [(if to-keys? (keyword Key) Key)
-            (when Value (fromBase64 Value))]))))
+  ([{:keys [body error status] :as resp} to-keys?]
+   (if (or error (not= status 200))
+     (throw (ex-info "failed to read from consul" (select-keys resp [:status :error])))
+     (into {}
+           (for [{:keys [Key Value]} (json/parse-string body true)]
+             [(if to-keys? (keyword Key) Key)
+              (when Value (fromBase64 Value))])))))
 
 (defn- find-consul-node [hosts]
      (let [at (atom -1)]
