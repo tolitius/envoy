@@ -5,7 +5,7 @@
             [org.httpkit.client :as http]
             [envoy.tools :as tools]
             [clojure.string :as string])
-  (:import [javax.xml.bind DatatypeConverter]))
+  (:import [java.util Base64]))
 
 (defn- recurse [path]
   (str path "?recurse"))
@@ -25,8 +25,8 @@
   (-> (http/get path (with-ops ops))
       index-of)))
 
-(defn- fromBase64 [s]
-  (String. (DatatypeConverter/parseBase64Binary s)))
+(defn- fromBase64 [^String s]
+  (String. (.decode (Base64/getDecoder) s)))
 
 (defn- read-values
   ([resp]
