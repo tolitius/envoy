@@ -341,17 +341,28 @@ In case a Consul space is protected by a token, or any other options need to be 
 
 ## Options
 
-All commands take an optional map of options.
+All commands take an optional map of parameters. These parameters will get converted into Consul [KV Store Endpoints](https://www.consul.io/api/kv.html#parameters) params. Thus making all of the KV Store Endpoint params supported.
 
 For example, in case keys are protected by ACL, you can provide a token:
 
 ```clojure
 boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
                                {:token "4c308bb2-16a3-4061-b678-357de559624a"})
+                               
 {:hubble {:mission "Butterfly Nebula", :store "spacecraft://ssd"}}
 ```
 
-or any other Consul options.
+or a _token_ and a _datacenter_:
+
+```clojure
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
+                               {:token "63aaa731-b124-40ef-9425-978aba612a1d"
+                                :dc "phloston"})
+                                
+{:hubble {:mission "Ghost of Jupiter", :store "spacecraft://tape"}}
+```
+
+or any other Consul supported parameters.
 
 ### Serializer
 
