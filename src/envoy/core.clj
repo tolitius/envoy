@@ -123,6 +123,11 @@
     (start-watcher (recurse path) fun stop-ch ops)
     (Watcher. stop-ch))))
 
+(defn strip-offset [xs offset]
+  (let [stripped (get-in xs (tools/cpath->kpath offset))]
+    (or stripped
+        (throw (ex-info "could not remove offset" {:data xs :offset offset :reason (str "this usually happens if both prefix and offset are used. for example (envoy/consul->map 'http://localhost:8500/v1/kv/hubble' {:offset 'mission'}) while it should have been (envoy/consul->map 'http://localhost:8500/v1/kv' {:offset '/hubble/mission'})")})))))
+
 (defn consul->map
   [path & [{:keys [serializer offset preserve-offset] :or {serializer :edn} :as ops}]]
   (let [full-path (if offset
@@ -134,7 +139,7 @@
                        (tools/props->map serializer))]
        (if preserve-offset
          consul-map
-         (get-in consul-map (tools/cpath->kpath offset)))))
+         (strip-offset consul-map offset))))
 
 (defn- overwrite-with
     [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]

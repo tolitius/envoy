@@ -99,6 +99,20 @@ boot.user=> (envoy/consul->map "http://dev-server:8500/v1/kv" {:offset "hubble/m
 
 Specifying an offset is really useful for multiple environments or teams living in the same consul / acl.
 
+(!) One thing to note is that an `offset` should start from the root and should be used with no data prefix in URL:
+
+i.e. this is good:
+```clojure
+(envoy/consul->map "http://localhost:8500/v1/kv" {:offset "/hubble/mission"})
+```
+
+but this is not:
+```clojure
+(envoy/consul->map "http://localhost:8500/v1/kv/hubble" {:offset "mission"})
+```
+
+this has to do with the fact that Consul always returns data with a prefix e.g.: `{:hubble {:mission {:target "Horsehead Nebula"}}}`, hence just "mission" would not be enough to strip it, but "hubble/mission" would.
+
 ## Watch for key/value changes
 
 Watching for kv changes with envoy _does not require_ to run a separate Consul Agent client or Consul Template and boils down to a simple function:
@@ -348,7 +362,7 @@ For example, in case keys are protected by ACL, you can provide a token:
 ```clojure
 boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
                                {:token "4c308bb2-16a3-4061-b678-357de559624a"})
-                               
+
 {:hubble {:mission "Butterfly Nebula", :store "spacecraft://ssd"}}
 ```
 
@@ -358,7 +372,7 @@ or a _token_ and a _datacenter_:
 boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
                                {:token "63aaa731-b124-40ef-9425-978aba612a1d"
                                 :dc "phloston"})
-                                
+
 {:hubble {:mission "Ghost of Jupiter", :store "spacecraft://tape"}}
 ```
 
