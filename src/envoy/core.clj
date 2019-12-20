@@ -31,9 +31,13 @@
 (defn- read-values
   ([resp]
    (read-values resp true))
-  ([{:keys [body error status] :as resp} to-keys?]
+  ([{:keys [body error status opts] :as resp} to-keys?]
    (if (or error (not= status 200))
-     (throw (ex-info "failed to read from consul" (select-keys resp [:status :error])))
+     (if (= 404 status)
+       (throw (ex-info "could not find path in consul" {:path (:url opts)}))
+       (throw (ex-info "failed to read from consul" {:path (:url opts)
+                                                     :error error
+                                                     :http-status status})))
      (into {}
            (for [{:keys [Key Value]} (json/parse-string body true)]
              [(if to-keys? (keyword Key) Key)
