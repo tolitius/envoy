@@ -1,10 +1,11 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[tolitius/envoy "0.1.11"]
-                          [org.clojure/tools.cli "0.3.5" :exclusions [org.clojure/clojure]]])
+(set-env! :dependencies '[[tolitius/envoy "0.1.15"]
+                          [org.clojure/tools.cli "1.0.194" :exclusions [org.clojure/clojure]]])
 
 (require '[clojure.edn :as edn]
          '[clojure.tools.cli :as cli]
+         '[clojure.pprint :as pp]
          '[envoy.core :as envoy])
 
 (defn exit!  [msg]
@@ -19,6 +20,7 @@
                                                                 :default "localhost"]
                                                                ["-p" "--consul-port PORT" "consul port"
                                                                 :default 8500]
+                                                               [nil "--pretty-print" "pretty print edn into a file"]
                                                                ["-o" "--options OPTIONS" "options: token, offset, etc."
                                                                 :default "{}"]])]
     (cond
@@ -32,13 +34,21 @@
 ;;                    -o '{:token "3c0d8be4-1cc3-4929-ce87-0a4425cb0171"}'
 
 (defn -main [& args]
-  (let [{:keys [consul-host consul-port edn-file options location]} (parse-args args)
+  (let [{:keys [consul-host
+                consul-port
+                edn-file
+                pretty-print
+                options
+                location]} (parse-args args)
         consul-url (str "http://" consul-host ":" consul-port "/v1/kv" location)
         options (edn/read-string options)]
     (println (str "copying from consul on \"" consul-url
                   "\" to \"" edn-file "\" file, with options: " options))
     (try
-      (->> (envoy/consul->map consul-url options)
-           (spit edn-file))
+      (let [config (envoy/consul->map consul-url options)
+            formatted (if-not pretty-print
+                        config
+                        (with-out-str (pp/pprint config)))]
+        (spit edn-file formatted))
       (catch Exception e
         (exit! (.getMessage e))))))
