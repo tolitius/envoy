@@ -7,7 +7,7 @@
                   [http-kit "2.3.0"]
 
                   ;; boot clj
-                  [boot/core              "2.7.2"           :scope "provided"]
+                  [boot/core              "2.8.2"           :scope "provided"]
                   [adzerk/bootlaces       "0.1.13"          :scope "test"]])
 
 (require '[adzerk.bootlaces :refer :all])
