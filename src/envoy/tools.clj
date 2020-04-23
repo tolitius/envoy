@@ -1,7 +1,6 @@
 (ns envoy.tools
   (:require [cheshire.core :as json]
             [clojure.string :as s]
-            [clojure.data :as cd]
             [clojure.edn :as edn]))
 
 (defn key->prop [k]
@@ -178,10 +177,3 @@
                    [[k]])))
              m))
     []))
-
-(defn diff-mpaths
-  "compares two maps paths however nested"
-  [m1 m2]
-  (let [ps1 (set (keys-in m1))
-        ps2 (set (keys-in m2))]
-    (cd/diff ps1 ps2)))
