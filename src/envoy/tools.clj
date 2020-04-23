@@ -1,6 +1,7 @@
 (ns envoy.tools
   (:require [cheshire.core :as json]
             [clojure.string :as s]
+            [clojure.data :as cd]
             [clojure.edn :as edn]))
 
 (defn key->prop [k]
@@ -164,3 +165,23 @@
   (str (without-slash s1)
        "/"
        (without-slash s2 {:slash :first})))
+
+;; author of "keys-in" is Alex Miller: https://stackoverflow.com/a/21769786/211277
+(defn keys-in [m]
+  (if (map? m)
+    (vec
+     (mapcat (fn [[k v]]
+               (let [sub (keys-in v)
+                     nested (map #(into [k] %) (filter (comp not empty?) sub))]
+                 (if (seq nested)
+                   nested
+                   [[k]])))
+             m))
+    []))
+
+(defn diff-mpaths
+  "compares two maps paths however nested"
+  [m1 m2]
+  (let [ps1 (set (keys-in m1))
+        ps2 (set (keys-in m2))]
+    (cd/diff ps1 ps2)))
