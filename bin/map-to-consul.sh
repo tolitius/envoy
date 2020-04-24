@@ -1,7 +1,7 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[tolitius/envoy "0.1.11"]
-                          [org.clojure/tools.cli "0.3.5" :exclusions [org.clojure/clojure]]])
+(set-env! :dependencies '[[tolitius/envoy "0.1.19"]
+                          [org.clojure/tools.cli "1.0.194" :exclusions [org.clojure/clojure]]])
 
 (require '[clojure.edn :as edn]
          '[clojure.tools.cli :as cli]

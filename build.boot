@@ -1,14 +1,14 @@
-(def +version+ "0.1.17")
+(def +version+ "0.1.19")
 
 (set-env!
   :source-paths #{"src"}
-  :dependencies '[[cheshire "5.8.0" :exclusions [org.clojure/clojure]]
-                  [org.clojure/core.async "0.4.500" :exclusions [org.clojure/clojure]]
+  :dependencies '[[cheshire "5.10.0"                  :exclusions [org.clojure/clojure]]
+                  [org.clojure/core.async "1.1.587"   :exclusions [org.clojure/clojure]]
                   [http-kit "2.3.0"]
 
                   ;; boot clj
-                  [boot/core              "2.8.2"           :scope "provided"]
-                  [adzerk/bootlaces       "0.1.13"          :scope "test"]])
+                  [boot/core              "2.8.2"     :scope "provided"]
+                  [adzerk/bootlaces       "0.2.0"     :scope "test"]])
 
 (require '[adzerk.bootlaces :refer :all])
 
