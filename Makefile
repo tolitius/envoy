@@ -1,4 +1,4 @@
-.PHONY: all clean jar tag
+.PHONY: all clean jar tag deploy
 
 clean:
 	rm -rf target
@@ -14,6 +14,9 @@ tag:
 
 pom.xml:
 	clojure -Spom
+
+deploy: jar
+	clojure -M:deploy
 
 tree: pom.xml
 	mvn dependency:tree
