@@ -1,0 +1,18 @@
+{:paths ["src" "resources"]
+ :deps {cheshire {:mvn/version "5.10.0"}
+        org.clojure/core.async {:mvn/version "1.1.587"}
+        http-kit {:mvn/version "2.4.0"}}
+
+ :aliases {:outdated {:extra-deps {olical/depot {:mvn/version "2.0.1"}}
+                      :main-opts  ["-m" "depot.outdated.main" "-a" "outdated"]}
+           :tag {:extra-deps {tolitius/tag {:mvn/version "0.1.7"}}
+                 :main-opts ["-m" "tag.core" "tolitius/envoy" "a gentle touch of clojure to hashicorp's consul"]}
+           :jar {:extra-deps {seancorfield/depstar {:mvn/version "1.1.128"}}
+                 :extra-paths ["target/about"]
+                 :main-opts ["-m" "hf.depstar.jar" "target/envoy.jar" "--exclude" "clojure/core/specs/alpha.*"]}
+           :deploy {:extra-deps {deps-deploy/deps-deploy {:mvn/version "RELEASE"}}
+                    :main-opts ["-m" "deps-deploy.deps-deploy" "deploy"
+                                "envoy.jar"]}
+           :install {:extra-deps {deps-deploy/deps-deploy {:mvn/version "RELEASE"}}
+                     :main-opts ["-m" "deps-deploy.deps-deploy" "install"
+                                 "envoy.jar"]}}}
