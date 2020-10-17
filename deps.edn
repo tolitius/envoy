@@ -11,8 +11,7 @@
                  :extra-paths ["target/about"]
                  :main-opts ["-m" "hf.depstar.jar" "target/envoy.jar" "--exclude" "clojure/core/specs/alpha.*"]}
            :deploy {:extra-deps {deps-deploy/deps-deploy {:mvn/version "RELEASE"}}
-                    :main-opts ["-m" "deps-deploy.deps-deploy" "deploy"
-                                "envoy.jar"]}
+                    :main-opts ["-m" "deps-deploy.deps-deploy" "deploy" "envoy.jar" "true"]}
            :install {:extra-deps {deps-deploy/deps-deploy {:mvn/version "RELEASE"}}
                      :main-opts ["-m" "deps-deploy.deps-deploy" "install"
                                  "envoy.jar"]}}}

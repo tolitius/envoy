@@ -12,7 +12,7 @@ outdated:
 tag:
 	clojure -M:tag
 
-pom.xml:
+pom.xml: deps.edn
 	clojure -Spom
 
 deploy: jar
