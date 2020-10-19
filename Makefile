@@ -15,6 +15,9 @@ tag:
 pom.xml: deps.edn
 	clojure -Spom
 
+install: jar
+	clojure -M:install
+
 deploy: jar
 	clojure -M:deploy
 
