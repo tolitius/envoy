@@ -1,4 +1,4 @@
-.PHONY: all clean jar tag deploy
+.PHONY: clean jar tag outdated install deploy tree repl
 
 clean:
 	rm -rf target
