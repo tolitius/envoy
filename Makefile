@@ -3,26 +3,23 @@
 clean:
 	rm -rf target
 
-jar: pom.xml tag
-	clojure -M:jar
+jar: tag
+	clojure -A:jar
 
 outdated:
 	clojure -M:outdated
 
 tag:
-	clojure -M:tag
-
-pom.xml: deps.edn
-	clojure -Spom
+	clojure -A:tag
 
 install: jar
-	clojure -M:install
+	clojure -A:install
 
 deploy: jar
-	clojure -M:deploy
+	clojure -A:deploy
 
-tree: pom.xml
+tree:
 	mvn dependency:tree
 
 repl:
-	clojure -A:dev -A:repl
+	clojure -A:repl

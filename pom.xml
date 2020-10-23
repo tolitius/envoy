@@ -6,6 +6,25 @@
   <artifactId>envoy</artifactId>
   <version>0.1.21-SNAPSHOT</version>
   <name>envoy</name>
+  <description>a gentle touch of clojure to hashicorp's consul</description>
+  <url>https://github.com/tolitius/envoy</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License</name>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>tolitius</name>
+    </developer>
+  </developers>
+  <scm>
+    <url>https://github.com/tolitius/envoy</url>
+    <connection>scm:git:git://github.com/tolitius/envoy.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/tolitius/envoy.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
