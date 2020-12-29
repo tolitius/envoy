@@ -353,6 +353,126 @@ In case a Consul space is protected by a token, or any other options need to be 
                          {:token "7a0f3b39-8871-e16e-2101-c1b30a911883"})
 ```
 
+## Sessions and Locks
+
+Consul provides a [session mechanism](https://www.consul.io/docs/dynamic-app-config/sessions) which can be used to build distributed locks.
+
+Sessions can be created, deleted, listed, listed for a node, etc. Once the session is created locks can be acquired for these sessions.
+
+Consul [session API](https://www.consul.io/api-docs/session) have multiple parameters, so do read the Consul docs in case you need to deviate from defaults.
+
+An example use case in this doc is to:
+
+* create two sessions with TTLs 45 seconds (`moon` and `mars`)
+* acquire a `start-stage-one-booster` lock with `moon`
+* try to acquire the same lock with `mars` _(fail)_
+* wait until the first, `moon` session expires
+* renew the `mars` session to make sure we can still use it after the `moon` expires
+* try to acquire the same lock with the `mars` session again _(succeed)_
+
+```clojure
+(require '[envoy.session :as es])
+```
+
+```clojure
+=> (def moon (es/create-session "http://localhost:8500" {:name "fly-me-to-the-moon" :ttl "45s"}))
+#'user/moon
+
+=> (def mars (es/create-session "http://localhost:8500" {:name "fly-me-to-the-mars" :ttl "45s"}))
+#'user/mars
+
+=> moon
+{:id "3f230917-90c9-6b5e-f579-43d854ba9cfe"}
+
+=> mars
+{:id "371445e6-d74f-9524-de06-8622fa4344cd"}
+```
+
+sessions are created and Consul returned session ids to refer to these sessions by.
+
+let's list these sessions:
+
+```clojure
+=> (es/list-sessions "http://localhost:8500")
+[{:service-checks nil,
+  :modify-index 18157665,
+  :name "fly-me-to-the-mars",
+  :behavior "release",
+  :node "pluto",
+  :ttl "45s",
+  :id "371445e6-d74f-9524-de06-8622fa4344cd",
+  :create-index 18157665,
+  :lock-delay 15000000000,
+  :node-checks ["serfHealth"]}
+ {:service-checks nil,
+  :modify-index 18157655,
+  :name "fly-me-to-the-moon",
+  :behavior "release",
+  :node "pluto",
+  :ttl "45s",
+  :id "3f230917-90c9-6b5e-f579-43d854ba9cfe",
+  :create-index 18157655,
+  :lock-delay 15000000000,
+  :node-checks ["serfHealth"]}]
+```
+
+now let's acquire a `start-stage-one-booster` lock with the `moon` session:
+
+```clojure
+=> (es/acquire-lock "http://localhost:8500" {:task "start-stage-one-booster"
+                                             :session-id (moon :id)})
+true
+```
+
+"true" means that Consul said that the lock was successfully acquired.
+
+now let's try to acquire the same lock with the `mars` session:
+
+```clojure
+=> (es/acquire-lock "http://localhost:8500" {:task "start-stage-one-booster"
+                                             :session-id (mars :id)})
+false
+```
+
+ooops, can't touch this. since this lock is already acquired by another session.
+
+while we are waiting on the `moon` session to expire (that "45s" TTL), let's renew the `mars` session so it overlives the `moon`:
+
+```clojure
+=> (es/renew-session "http://localhost:8500" {:uuid (mars :id)})
+[{:service-checks nil,
+  :modify-index 18157665,
+  :name "fly-me-to-the-mars",
+  :behavior "release",
+  :node "pluto",
+  :ttl "45s",
+  :id "371445e6-d74f-9524-de06-8622fa4344cd",
+  :create-index 18157665,
+  :lock-delay 15000000000,
+  :node-checks ["serfHealth"]}]
+```
+
+we waited for over 45 seconds, let's try to acquire the same lock with `mars` again:
+
+```clojure
+=> (es/acquire-lock "http://localhost:8500" {:task "start-stage-one-booster"
+                                             :session-id (mars :id)})
+true
+```
+
+great success! by the way we also get a visual:
+
+<p align="center"><img src="doc/img/mars-lock.png"></p>
+
+all the params and options can still be used with session api. For example a data center and an ACL token:
+
+```clojure
+=> (es/create-session "http://localhost:8500" {:dc "asteroid-belt" :name "fly-me-to-the-moon" :ttl "45s"}
+                                              {:token "73e5a965-40af-9c70-a817-b065b6ef82db"})
+```
+
+the reason they are in two maps is because a `dc` is part of the API parameters, whereas a token is a general Consul param.
+
 ## Options
 
 All commands take an optional map of parameters. These parameters will get converted into Consul [KV Store Endpoints](https://www.consul.io/api/kv.html#parameters) params. Thus making all of the KV Store Endpoint params supported.

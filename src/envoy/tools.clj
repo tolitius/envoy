@@ -165,6 +165,13 @@
        "/"
        (without-slash s2 {:slash :first})))
 
+(defn fmk
+  "apply f to each key k of map m"
+  [m f]
+  (into {}
+        (for [[k v] m]
+          [(f k) v])))
+
 ;; author of "keys-in" is Alex Miller: https://stackoverflow.com/a/21769786/211277
 (defn keys-in [m]
   (if (map? m)
@@ -177,3 +184,18 @@
                    [[k]])))
              m))
     []))
+
+(defn dissoc-in
+  "from https://github.com/clojure/core.incubator
+   dissociates an entry from a nested associative structure returning a new
+   nested structure. keys is a sequence of keys. Any empty maps that result
+   will not be present in the new structure."
+  [m [k & ks :as keys]]
+  (if ks
+    (if-let [nextmap (get m k)]
+      (let [newmap (dissoc-in nextmap ks)]
+        (if (seq newmap)
+          (assoc m k newmap)
+          (dissoc m k)))
+      m)
+    (dissoc m k)))

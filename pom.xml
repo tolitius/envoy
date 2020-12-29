@@ -4,7 +4,7 @@
   <packaging>jar</packaging>
   <groupId>tolitius</groupId>
   <artifactId>envoy</artifactId>
-  <version>0.1.21-SNAPSHOT</version>
+  <version>0.1.22-SNAPSHOT</version>
   <name>envoy</name>
   <description>a gentle touch of clojure to hashicorp's consul</description>
   <url>https://github.com/tolitius/envoy</url>
@@ -35,6 +35,11 @@
       <groupId>cheshire</groupId>
       <artifactId>cheshire</artifactId>
       <version>5.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>camel-snake-kebab</groupId>
+      <artifactId>camel-snake-kebab</artifactId>
+      <version>0.4.2</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
