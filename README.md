@@ -23,6 +23,7 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
   - [Copy](#copy)
   - [Move](#move)
 - [Merging Configurations](#merging-configurations)
+- [Sessions and Locks](#sessions-and-locks)
 - [Options](#options)
   - [Serializer](#serializer)
 - [License](#license)
@@ -359,12 +360,12 @@ Consul provides a [session mechanism](https://www.consul.io/docs/dynamic-app-con
 
 Sessions can be created, deleted, listed, listed for a node, etc. Once the session is created locks can be acquired for these sessions.
 
-Consul [session API](https://www.consul.io/api-docs/session) have multiple parameters, so do read the Consul docs in case you need to deviate from defaults.
+Consul [session API](https://www.consul.io/api-docs/session) have multiple parameters, do read the Consul docs in case you need to deviate from defaults.
 
-An example use case in this doc is to:
+An example we'll look at here will:
 
-* create two sessions with TTLs 45 seconds (`moon` and `mars`)
-* acquire a `start-stage-one-booster` lock with `moon`
+* create two sessions with TTL 45 seconds (`moon` and `mars`)
+* acquire a `start-stage-one-booster` lock for the `moon` session
 * try to acquire the same lock with `mars` _(fail)_
 * wait until the first, `moon` session expires
 * renew the `mars` session to make sure we can still use it after the `moon` expires
@@ -424,7 +425,7 @@ now let's acquire a `start-stage-one-booster` lock with the `moon` session:
 true
 ```
 
-"true" means that Consul said that the lock was successfully acquired.
+"true" means Consul said the lock was successfully acquired.
 
 now let's try to acquire the same lock with the `mars` session:
 
@@ -434,9 +435,9 @@ now let's try to acquire the same lock with the `mars` session:
 false
 ```
 
-ooops, can't touch this. since this lock is already acquired by another session.
+ooops, can't touch this: since this lock is already acquired by another session.
 
-while we are waiting on the `moon` session to expire (that "45s" TTL), let's renew the `mars` session so it overlives the `moon`:
+while we are waiting on the `moon` session to expire (that "45s" TTL), let's renew the `mars` session so it outlives the `moon` one:
 
 ```clojure
 => (es/renew-session "http://localhost:8500" {:uuid (mars :id)})
@@ -452,7 +453,7 @@ while we are waiting on the `moon` session to expire (that "45s" TTL), let's ren
   :node-checks ["serfHealth"]}]
 ```
 
-we waited for over 45 seconds, let's try to acquire the same lock with `mars` again:
+after waiting for over 45 seconds, let's try to acquire the same lock with the `mars` session again:
 
 ```clojure
 => (es/acquire-lock "http://localhost:8500" {:task "start-stage-one-booster"
@@ -460,18 +461,22 @@ we waited for over 45 seconds, let's try to acquire the same lock with `mars` ag
 true
 ```
 
-great success! by the way we also get a visual:
+great success!
+
+by the way we also get a visual:
 
 <p align="center"><img src="doc/img/mars-lock.png"></p>
 
-all the params and options can still be used with session api. For example a data center and an ACL token:
+all the params and options can still be used with session api.
+
+for example to pass a "data center" and an "ACL token":
 
 ```clojure
 => (es/create-session "http://localhost:8500" {:dc "asteroid-belt" :name "fly-me-to-the-moon" :ttl "45s"}
                                               {:token "73e5a965-40af-9c70-a817-b065b6ef82db"})
 ```
 
-the reason they are in two maps is because a `dc` is part of the API parameters, whereas a token is a general Consul param.
+the reason they are in two maps is because a `dc` is part of create session API parameters, whereas a token is a general Consul param.
 
 ## Options
 
