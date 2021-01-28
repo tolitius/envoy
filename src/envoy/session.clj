@@ -103,15 +103,19 @@
 (defn acquire-lock
   ([url args]
    (acquire-lock url args {}))
-  ([url {:keys [task session-id] :as args} opts]
-   (hput (-> url with-version (str "/kv/locks/" task "/.lock?acquire=" session-id))
+  ([url {:keys [path task session-id]
+         :or {path "locks"}
+         :as args} opts]
+   (hput (-> url with-version (str "/kv/" path "/" task "/.lock?acquire=" session-id))
          (json/generate-string {:acquire session-id})
          opts)))
 
 (defn release-lock
   ([url args]
    (release-lock url args {}))
-  ([url {:keys [task session-id] :as args} opts]
-   (hput (-> url with-version (str "/kv/locks/" task "/.lock?release=" session-id))
+  ([url {:keys [path task session-id]
+         :or {path "locks"}
+         :as args} opts]
+   (hput (-> url with-version (str "/kv/" path "/" task "/.lock?release=" session-id))
          (json/generate-string {:release session-id})
          opts)))
