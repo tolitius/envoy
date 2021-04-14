@@ -34,10 +34,10 @@
   ([{:keys [body error status opts] :as resp} to-keys?]
    (if (or error (not= status 200))
      (if (= 404 status)
-       (throw (ex-info "could not find path in consul" {:path (:url opts)}))
-       (throw (ex-info "failed to read from consul" {:path (:url opts)
-                                                     :error error
-                                                     :http-status status})))
+       (throw (RuntimeException. (str "could not find path in consul" {:path (:url opts)})))
+       (throw (RuntimeException. (str "failed to read from consul" {:path (:url opts)
+                                                                    :error error
+                                                                    :http-status status}))))
      (into {}
            (for [{:keys [Key Value]} (json/parse-string body true)]
              [(if to-keys? (keyword Key) Key)
@@ -126,7 +126,7 @@
 (defn strip-offset [xs offset]
   (let [stripped (get-in xs (tools/cpath->kpath offset))]
     (or stripped
-        (throw (ex-info "could not remove offset" {:data xs :offset offset :reason (str "this usually happens if both prefix and offset are used. for example (envoy/consul->map 'http://localhost:8500/v1/kv/hubble' {:offset 'mission'}) while it should have been (envoy/consul->map 'http://localhost:8500/v1/kv' {:offset '/hubble/mission'})")})))))
+        (throw (RuntimeException. (str "could not remove offset" {:data xs :offset offset :reason (str "this usually happens if both prefix and offset are used. for example (envoy/consul->map 'http://localhost:8500/v1/kv/hubble' {:offset 'mission'}) while it should have been (envoy/consul->map 'http://localhost:8500/v1/kv' {:offset '/hubble/mission'})")}))))))
 
 (defn consul->map
   [path & [{:keys [serializer offset preserve-offset] :or {serializer :edn} :as ops}]]
