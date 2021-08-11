@@ -1,5 +1,5 @@
 {:paths ["src"]
- :deps {cheshire/cheshire {:mvn/version "5.10.0"}
+ :deps {cheshire/cheshire {:mvn/version "5.10.1"}
         camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
         org.clojure/core.async {:mvn/version "1.1.587"}
         http-kit/http-kit {:mvn/version "2.4.0"}}
