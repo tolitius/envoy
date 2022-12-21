@@ -1,6 +1,6 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[tolitius/envoy "0.1.19"]
+(set-env! :dependencies '[[tolitius/envoy "0.1.26"]
                           [org.clojure/tools.cli "1.0.194" :exclusions [org.clojure/clojure]]])
 
 (require '[clojure.edn :as edn]
@@ -31,7 +31,7 @@
 
 (defn -main [& args]
   (let [{:keys [consul-host consul-port edn-file options]} (parse-args args)
-        consult-url (str "http://" consul-host ":" consul-port "/v1/kv")
+        consult-url (str consul-host "/v1/kv")
         data (-> edn-file
                  slurp
                  edn/read-string)

@@ -1,6 +1,6 @@
 #!/usr/bin/env boot
 
-(set-env! :dependencies '[[tolitius/envoy "0.1.19"]
+(set-env! :dependencies '[[tolitius/envoy "0.1.26"]
                           [org.clojure/tools.cli "1.0.194" :exclusions [org.clojure/clojure]]])
 
 (require '[clojure.edn :as edn]
@@ -40,7 +40,7 @@
                 pretty-print
                 options
                 location]} (parse-args args)
-        consul-url (str "http://" consul-host ":" consul-port "/v1/kv" location)
+        consul-url (str consul-host "/v1/kv" location)
         options (edn/read-string options)]
     (println (str "copying from consul on \"" consul-url
                   "\" to \"" edn-file "\" file, with options: " options))

@@ -4,7 +4,7 @@
   :source-paths #{"src"}
   :dependencies '[[cheshire "5.10.1"                  :exclusions [org.clojure/clojure]]
                   [org.clojure/core.async "1.1.587"   :exclusions [org.clojure/clojure]]
-                  [http-kit "2.5.3"]
+                  [http-kit "2.6.0"]
 
                   ;; boot clj
                   [boot/core              "2.8.2"     :scope "provided"]
