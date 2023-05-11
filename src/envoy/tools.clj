@@ -64,10 +64,11 @@
   the numbers to longs, the alphanumeric values to strings, and will use Clojure reader for the rest
   in case reader can't read OR it reads a symbol, the value will be returned as is (a string)"
   (cond
-    (re-matches #"[0-9]+" v) (Long/parseLong v)
+    (nil? v)                         v
+    (re-matches #"[0-9]+" v)         (Long/parseLong v)
     (re-matches #"^(true|false)$" v) (Boolean/parseBoolean v)
-    (re-matches #"\w+" v) v
-    :else (deserialize v deserializer)))
+    (re-matches #"\w+" v)            v
+    :else                            (deserialize v deserializer)))
 
 (defn- key->path [k level]
   (as-> k $
@@ -96,9 +97,22 @@
             (comp remove? second)
             m))))
 
+(defn include-explicit-nils
+  "There are certain scnearios, where Configuration from CONSUL should support explicit `nil` values
+   Replace explicit `nil` [case insensitive] value with nil"
+  [map-with-nils]
+  (let [explicit-nil? (fn [val] (some-> val s/lower-case (= "nil")))]
+    (into {}
+      (map (fn [[ki val-u]]
+             [ki (if (explicit-nil? val-u)
+	           nil
+		   val-u)])
+           map-with-nils))))
+
 (defn props->map [read-from-consul & [deserializer]]
   (->> (for [[k v] (-> (read-from-consul)
-                       remove-nils)]
+                       remove-nils
+		       include-explicit-nils)]
           [(key->path k #"/")
            (str->value v deserializer)])
        sys->map))
