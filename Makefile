@@ -23,3 +23,6 @@ tree:
 
 repl:
 	clojure -A:repl
+
+test:
+        clojure -X:test

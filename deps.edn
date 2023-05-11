@@ -14,4 +14,9 @@
            :deploy {:extra-deps {deps-deploy/deps-deploy {:mvn/version "RELEASE"}}
                     :main-opts ["-m" "deps-deploy.deps-deploy" "deploy" "target/envoy.jar"]}
            :install {:extra-deps {deps-deploy/deps-deploy {:mvn/version "RELEASE"}}
-                     :main-opts ["-m" "deps-deploy.deps-deploy" "install" "target/envoy.jar"]}}}
+                     :main-opts ["-m" "deps-deploy.deps-deploy" "install" "target/envoy.jar"]}
+           :test {:extra-paths ["test"]
+                  :exec-fn     cognitect.test-runner.api/test
+                  :main-opts   ["-m" "cognitect.test-runner"] 
+                  :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+                                org.clojure/test.check               {:mvn/version "RELEASE"}}}}}
