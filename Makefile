@@ -24,5 +24,6 @@ tree:
 repl:
 	clojure -A:repl
 
-test:
-        clojure -X:test
+tests:
+	clojure -X:test
+
