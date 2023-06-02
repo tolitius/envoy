@@ -82,7 +82,7 @@
    (get-all path {}))
   ([path {:keys [keywordize?] :as ops
           :or {keywordize? true}}]
-   (-> @(http/get (recurse (tools/with-slash path))
+   (-> @(http/get (recurse (tools/without-slash path))
                   (with-ops (dissoc ops :keywordize?)))
        (read-values keywordize?))))
 
