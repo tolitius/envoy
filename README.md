@@ -33,8 +33,8 @@ _[source](https://en.wikipedia.org/wiki/Diplomatic_rank#Historical_ranks.2C_1815
 In order to follow all the docs below, bring envoy in:
 
 ```clojure
-$ boot repl
-boot.user=> (require '[envoy.core :as envoy :refer [stop]])
+$ make repl
+dev=> (require '[envoy.core :as envoy :refer [stop]])
 nil
 ```
 
@@ -43,14 +43,14 @@ nil
 Since most Clojure configs are EDN maps, you can simply push the map to Consul with preserving the hierarchy:
 
 ```clojure
-boot.user=> (def m {:hubble
+dev=> (def m {:hubble
                     {:store "spacecraft://tape"
                      :camera
                       {:mode "color"}
                      :mission
                       {:target "Horsehead Nebula"}}})
 
-boot.user=> (envoy/map->consul "http://localhost:8500/v1/kv" m)
+dev=> (envoy/map->consul "http://localhost:8500/v1/kv" m)
 nil
 ```
 
@@ -74,7 +74,7 @@ and a visual:
 In case a Clojure map with config read from Consul is needed it is just `consul->map` away:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/hubble")
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv/hubble")
 {:hubble
  {:camera {:mode "color"},
   :mission {:target "Horsehead Nebula"},
@@ -94,7 +94,7 @@ You may also read from consul at a certain `:offset` by specifying it in options
 Let's say we need to get everything that lives under the `hubble/mission`:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv" {:offset "hubble/mission"})
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv" {:offset "hubble/mission"})
 {:target "Horsehead Nebula"}
 ```
 
@@ -125,21 +125,21 @@ Watching for kv changes with envoy _does not require_ to run a separate Consul A
 `fun` is going to be called with a new value each time the `path`'s value is changed.
 
 ```clojure
-boot.user=> (def store-watcher (envoy/watch-path "http://localhost:8500/v1/kv/hubble/store"
+dev=> (def store-watcher (envoy/watch-path "http://localhost:8500/v1/kv/hubble/store"
                                                  #(println "watcher says:" %)))
 ```
 
 creates a `envoy.core.Watcher` and echos back the current value:
 
 ```clojure
-#'boot.user/store-watcher
+#'dev/store-watcher
 watcher says: {:hubble/store spacecraft}
 ```
 
 it is an `envoy.core.Watcher`:
 
 ```clojure
-boot.user=> store-watcher
+dev=> store-watcher
 #object[envoy.core.Watcher 0x72a190f0 "envoy.core.Watcher@72a190f0"]
 ```
 
@@ -157,7 +157,7 @@ watcher says: {:hubble/store Earth}
 same thing if it's changed with `envoy/put`:
 
 ```clojure
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/store" "spacecraft tape")
+dev=> (envoy/put "http://localhost:8500/v1/kv/hubble/store" "spacecraft tape")
 watcher says: {:hubble/store spacecraft tape}
 {:opts {:body "spacecraft tape", :method :put, :url "http://localhost:8500/v1/kv/hubble/store"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 03:22:41 GMT"}, :status 200}
 ```
@@ -165,7 +165,7 @@ watcher says: {:hubble/store spacecraft tape}
 `envoy.core.Watcher` is stoppable:
 
 ```clojure
-boot.user=> (stop store-watcher)
+dev=> (stop store-watcher)
 "stopping" "http://localhost:8500/v1/kv/hubble/store" "watcher"
 true
 ```
@@ -175,7 +175,7 @@ true
 In case you need to watch a hierarchy of keys (with all the nested keys), you can set a watcher on a local root key:
 
 ```clojure
-boot.user=> (def hw (envoy/watch-path "http://localhost:8500/v1/kv/hubble"
+dev=> (def hw (envoy/watch-path "http://localhost:8500/v1/kv/hubble"
                                       #(println "watcher says:" %)))
 ```
 
@@ -192,7 +192,7 @@ watcher says: {:hubble/mission Butterfly Nebula}
 It can be stopped as any other watcher:
 
 ```clojure
-boot.user=> (stop hw)
+dev=> (stop hw)
 "stopping" "http://localhost:8500/v1/kv/hubble?recurse" "watcher"
 true
 ```
@@ -212,32 +212,32 @@ Notification listner is just a function really, hence it can get propagated anyw
 The map from above can be done manually by "puts" of course:
 
 ```clojure
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/mission" "Horsehead Nebula")
+dev=> (envoy/put "http://localhost:8500/v1/kv/hubble/mission" "Horsehead Nebula")
 {:opts {:body "Horsehead Nebula", :method :put, :url "http://localhost:8500/v1/kv/hubble/mission"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:57:40 GMT"}, :status 200}
 
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/store" "spacecraft")
+dev=> (envoy/put "http://localhost:8500/v1/kv/hubble/store" "spacecraft")
 {:opts {:body "spacecraft", :method :put, :url "http://localhost:8500/v1/kv/hubble/store"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:58:13 GMT"}, :status 200}
 
-boot.user=> (envoy/put "http://localhost:8500/v1/kv/hubble/camera/mode" "color")
+dev=> (envoy/put "http://localhost:8500/v1/kv/hubble/camera/mode" "color")
 {:opts {:body "color", :method :put, :url "http://localhost:8500/v1/kv/hubble/camera/mode"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:58:36 GMT"}, :status 200}
 ```
 
 ### Reading from Consul
 
 ```clojure
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
+dev=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
 {:hubble/camera/mode "color",
  :hubble/mission "Horsehead Nebula",
  :hubble/store "spacecraft://tape"}
 
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble/store")
+dev=> (envoy/get-all "http://localhost:8500/v1/kv/hubble/store")
 {:hubble/store "spacecraft"}
 ```
 
 in case there is no need to convert keys to keywords, it can be disabled:
 
 ```clojure
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/" {:keywordize? false})
+dev=> (envoy/get-all "http://localhost:8500/v1/kv/" {:keywordize? false})
 {"hubble/camera/mode" "color",
  "hubble/mission" "Horsehead Nebula",
  "hubble/store" "spacecraft://tape"}
@@ -246,10 +246,10 @@ boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/" {:keywordize? false})
 ### Deleting from Consul
 
 ```clojure
-boot.user=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
+dev=> (envoy/delete "http://localhost:8500/v1/kv/hubble/camera")
 {:opts {:method :delete, :url "http://localhost:8500/v1/kv/hubble/camera?recurse"}, :body "true", :headers {:content-length "4", :content-type "application/json", :date "Wed, 02 Nov 2016 02:59:26 GMT"}, :status 200}
 
-boot.user=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
+dev=> (envoy/get-all "http://localhost:8500/v1/kv/hubble")
 {:hubble/mission "Horsehead Nebula", :hubble/store "spacecraft://tape"}
 ```
 
@@ -266,13 +266,13 @@ Copying configuration from one place to another is done with a `copy` command:
 Let's say we need to copy Hubble's mission (i.e. a "sub" config) under a new root "dev", so it lives under "/dev/hubble/mission" instead:
 
 ```clojure
-boot.user=> (envoy/copy "http://localhost:8500/v1/kv" "/hubble/mission" "/dev/hubble/mission")
+dev=> (envoy/copy "http://localhost:8500/v1/kv" "/hubble/mission" "/dev/hubble/mission")
 ```
 
 done. Let's read from this new "dev" root to make sure the mission is there:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
 {:dev {:hubble {:mission {:target "Horsehead Foo"}}}}
 ```
 
@@ -281,11 +281,11 @@ great.
 We can of course copy the whole "hubble"'s config under "dev":
 
 ```clojure
-boot.user=> (envoy/copy "http://localhost:8500/v1/kv" "/hubble" "/dev/hubble")
+dev=> (envoy/copy "http://localhost:8500/v1/kv" "/hubble" "/dev/hubble")
 ```
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv/dev")
 {:dev {:hubble {:camera {:mode "color"}, :mission {:target "Horsehead Nebula"}, :store "spacecraft tape"}}}
 ```
 
@@ -300,7 +300,7 @@ A `move` command is exactly the same as the `copy`, but, as you would expect, it
 The Hubble's development work is finished, and we are switching to work on the Kepler telescope. Let's say most of the configuration may be reused, so we'll just move Hubble's config to Kepler:
 
 ```clojure
-boot.user=> (envoy/move "http://localhost:8500/v1/kv" "/hubble" "/kepler")
+dev=> (envoy/move "http://localhost:8500/v1/kv" "/hubble" "/kepler")
 ```
 
 done.
@@ -308,19 +308,19 @@ done.
 Oh, but we'll need "dev" and "qa" environments for Kepler's development. Let's move it again to live under "dev" root:
 
 ```clojure
-boot.user=> (envoy/move "http://localhost:8500/v1/kv" "/kepler" "/dev/kepler")
+dev=> (envoy/move "http://localhost:8500/v1/kv" "/kepler" "/dev/kepler")
 ```
 
 and "copy" this config to "qa" before editing it:
 
 ```clojure
-boot.user=> (envoy/copy "http://localhost:8500/v1/kv" "/dev/kepler" "/qa/kepler")
+dev=> (envoy/copy "http://localhost:8500/v1/kv" "/dev/kepler" "/qa/kepler")
 ```
 
 Let's look at Kepler's Consul universe:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv")
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv")
 
 {:dev
  {:kepler
@@ -485,7 +485,7 @@ All commands take an optional map of parameters. These parameters will get conve
 For example, in case keys are protected by ACL, you can provide a token:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv"
                                {:token "4c308bb2-16a3-4061-b678-357de559624a"})
 
 {:hubble {:mission "Butterfly Nebula", :store "spacecraft://ssd"}}
@@ -494,7 +494,7 @@ boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
 or a _token_ and a _datacenter_:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv"
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv"
                                {:token "63aaa731-b124-40ef-9425-978aba612a1d"
                                 :dc "phloston"})
 
@@ -520,13 +520,13 @@ While there are libraries for other languages that support EDN
 envoy would allow to specify other serializers via a `:serializer` option:
 
 ```clojure
-boot.user=> (def config {:system {:hosts ["foo1.com", "foo2.com", {:a 42}]}})
-#'boot.user/config
+dev=> (def config {:system {:hosts ["foo1.com", "foo2.com", {:a 42}]}})
+#'dev/config
 
-boot.user=> (envoy/map->consul "http://localhost:8500/v1/kv" config {:serializer :json})
+dev=> (envoy/map->consul "http://localhost:8500/v1/kv" config {:serializer :json})
 nil
 
-boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/system" {:serializer :json})
+dev=> (envoy/consul->map "http://localhost:8500/v1/kv/system" {:serializer :json})
 {:system {:hosts ["foo1.com" "foo2.com" {:a 42}]}}
 ```
 
@@ -538,7 +538,7 @@ which can be consumed from other languages without the need to know about EDN.
 
 ## License
 
-Copyright © 2020 tolitius
+Copyright © 2023 tolitius
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
