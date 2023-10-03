@@ -1,8 +1,8 @@
 {:paths ["src"]
- :deps {cheshire/cheshire {:mvn/version "5.10.1"}
-        camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
-        org.clojure/core.async {:mvn/version "1.1.587"}
-        http-kit/http-kit {:mvn/version "2.5.3"}}
+ :deps {cheshire/cheshire {:mvn/version "5.12.0"}
+        camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
+        org.clojure/core.async {:mvn/version "1.6.681"}
+        http-kit/http-kit {:mvn/version "2.7.0"}}
 
  :aliases {:outdated {:extra-deps {olical/depot {:mvn/version "2.0.1"}}
                       :main-opts  ["-m" "depot.outdated.main" "-a" "outdated"]}
@@ -17,6 +17,6 @@
                      :main-opts ["-m" "deps-deploy.deps-deploy" "install" "target/envoy.jar"]}
            :test {:extra-paths ["test"]
                   :exec-fn     cognitect.test-runner.api/test
-                  :main-opts   ["-m" "cognitect.test-runner"] 
+                  :main-opts   ["-m" "cognitect.test-runner"]
                   :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
                                 org.clojure/test.check               {:mvn/version "RELEASE"}}}}}

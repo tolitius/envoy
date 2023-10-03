@@ -94,7 +94,7 @@ You may also read from consul at a certain `:offset` by specifying it in options
 Let's say we need to get everything that lives under the `hubble/mission`:
 
 ```clojure
-boot.user=> (envoy/consul->map "http://dev-server:8500/v1/kv" {:offset "hubble/mission"})
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv" {:offset "hubble/mission"})
 {:target "Horsehead Nebula"}
 ```
 
@@ -523,10 +523,10 @@ envoy would allow to specify other serializers via a `:serializer` option:
 boot.user=> (def config {:system {:hosts ["foo1.com", "foo2.com", {:a 42}]}})
 #'boot.user/config
 
-boot.user=> (envoy/map->consul "http://dev-server:8500/v1/kv" config {:serializer :json})
+boot.user=> (envoy/map->consul "http://localhost:8500/v1/kv" config {:serializer :json})
 nil
 
-boot.user=> (envoy/consul->map "http://dev-server:8500/v1/kv/system" {:serializer :json})
+boot.user=> (envoy/consul->map "http://localhost:8500/v1/kv/system" {:serializer :json})
 {:system {:hosts ["foo1.com" "foo2.com" {:a 42}]}}
 ```
 
