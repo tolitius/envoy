@@ -1,7 +1,7 @@
 (ns envoy.core
   (:require [cheshire.core :as json]
             [clojure.data :refer [diff]]
-            [clojure.core.async :refer [go-loop go <! >! >!! alt! chan]]
+            [clojure.core.async :refer [go-loop go <! >! >!! alt! chan close!]]
             [org.httpkit.client :as http]
             [envoy.tools :as tools]
             [clojure.string :as string])
@@ -16,7 +16,10 @@
       :x-consul-index))
 
 (defn- with-ops [ops]
-  {:query-params (tools/remove-nils ops)})
+  (if (-> ops :token nil?)
+    (throw (RuntimeException. "consul-token not provided authorization failed"))
+    {:query-params (tools/remove-nils ops)
+     :headers      {"authorization" (str "Bearer " (:token ops))}}))
 
 (defn- read-index
   ([path]
@@ -90,12 +93,26 @@
   ([path fun stop?]
    (start-watcher path fun stop? {}))
   ([path fun stop? ops]
-   (let [ch (chan)]
-     (go-loop [index nil current (get-all path)]
-              (http/get path
+   (let [ch (chan)
+         close-all-channels (fn []
+                              (close! ch)
+                              (close! stop?))]
+     (go-loop [index   nil
+               current (try
+                         (get-all path ops)
+                         (catch RuntimeException watch-error
+                           (-> (format "Error while watching %s: %s" path watch-error)
+                               prn)
+                           (close-all-channels)))]
+              (try
+                (http/get (recurse path)
                         (with-ops (merge ops
                                          {:index (or index (read-index path ops))}))
                         #(>!! ch %))
+                (catch Exception watch-error
+                  (-> (format "Error while watching %s: %s" path watch-error)
+                      prn)
+                  (close-all-channels)))
               (alt!
                 stop? ([_]
                        (prn "stopping" path "watcher"))
@@ -117,10 +134,10 @@
 
 (defn watch-path
   ([path fun]
-   (watch-path path fun {}))
+   (watch-path path fun {:token (System/getenv "CONSUL_TOKEN")}))
   ([path fun ops]
   (let [stop-ch (chan)]
-    (start-watcher (recurse path) fun stop-ch ops)
+    (start-watcher path fun stop-ch ops)
     (Watcher. stop-ch))))
 
 (defn strip-offset [xs offset]
