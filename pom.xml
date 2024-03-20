@@ -4,7 +4,7 @@
   <packaging>jar</packaging>
   <groupId>tolitius</groupId>
   <artifactId>envoy</artifactId>
-  <version>0.1.32</version>
+  <version>0.1.32-SNAPSHOT</version>
   <name>envoy</name>
   <description>a gentle touch of clojure to hashicorp's consul</description>
   <url>https://github.com/tolitius/envoy</url>
