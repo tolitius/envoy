@@ -1,37 +1,25 @@
 (ns envoy.core
   (:require [cheshire.core :as json]
             [clojure.data :refer [diff]]
-            [clojure.core.async :refer [go-loop go <! >! >!! alt! chan close!]]
             [org.httpkit.client :as http]
             [envoy.tools :as tools]
             [clojure.string :as string])
   (:import [java.util Base64]))
 
-(defn- recurse [path]
+(defn recurse [path]
   (str path "?recurse"))
 
-(defn- index-of [resp]
-  (-> resp
-      :headers
-      :x-consul-index))
+(defn with-ops [ops]
+  {:query-params (tools/remove-nils ops)})
 
-(defn- with-ops [ops]
-  (if (-> ops :token nil?)
-    (throw (RuntimeException. "consul-token not provided authorization failed"))
-    {:query-params (tools/remove-nils ops)
-     :headers      {"authorization" (str "Bearer " (:token ops))}}))
-
-(defn- read-index
-  ([path]
-   (read-index path {}))
-  ([path ops]
-  (-> (http/get path (with-ops ops))
-      index-of)))
+(defn with-auth [{:keys [token]}]
+  (if token
+    {:headers {"authorization" token}}))
 
 (defn- fromBase64 [^String s]
   (String. (.decode (Base64/getDecoder) s)))
 
-(defn- read-values
+(defn read-values
   ([resp]
    (read-values resp true))
   ([{:keys [body error status opts] :as resp} to-keys?]
@@ -86,59 +74,9 @@
   ([path {:keys [keywordize?] :as ops
           :or {keywordize? true}}]
    (-> @(http/get (recurse (tools/without-slash path))
-                  (with-ops (dissoc ops :keywordize?)))
+                  (merge (with-ops (dissoc ops :keywordize?))
+                         (with-auth ops)))
        (read-values keywordize?))))
-
-(defn- start-watcher
-  ([path fun stop?]
-   (start-watcher path fun stop? {}))
-  ([path fun stop? ops]
-   (let [ch (chan)
-         close-all-channels (fn []
-                              (close! ch)
-                              (close! stop?))]
-     (go-loop [index   nil
-               current (try
-                         (get-all path ops)
-                         (catch RuntimeException watch-error
-                           (-> (format "Error while watching %s: %s" path watch-error)
-                               prn)
-                           (close-all-channels)))]
-              (try
-                (http/get (recurse path)
-                        (with-ops (merge ops
-                                         {:index (or index (read-index path ops))}))
-                        #(>!! ch %))
-                (catch Exception watch-error
-                  (-> (format "Error while watching %s: %s" path watch-error)
-                      prn)
-                  (close-all-channels)))
-              (alt!
-                stop? ([_]
-                       (prn "stopping" path "watcher"))
-                ch ([resp]
-                    (let [new-idx (index-of resp)
-                          new-vs (read-values resp)]
-                      (when (and index (not= new-idx index))               ;; first time there is no index
-                        (when-let [changes (first (diff new-vs current))]
-                          (fun changes)))
-                      (recur new-idx new-vs))))))))
-
-(defprotocol Stoppable
-  (stop [this]))
-
-(deftype Watcher [ch]
-  Stoppable
-  (stop [_]
-    (>!! ch :done)))
-
-(defn watch-path
-  ([path fun]
-   (watch-path path fun {:token (System/getenv "CONSUL_TOKEN")}))
-  ([path fun ops]
-  (let [stop-ch (chan)]
-    (start-watcher path fun stop-ch ops)
-    (Watcher. stop-ch))))
 
 (defn strip-offset [xs offset]
   (let [stripped (get-in xs (tools/cpath->kpath offset))]
