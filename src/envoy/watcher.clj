@@ -28,7 +28,7 @@
                current (try
                          (core/get-all path ops)
                          (catch RuntimeException watch-error
-                           (-> (format "Error while watching %s: %s" path watch-error)
+                           (-> (format "[envoy watcher]: could not read latest changes from '%s' due to: %s" path watch-error)
                                prn)
                            (close-all-channels)))]
               (try
@@ -38,7 +38,7 @@
                                  (core/with-auth ops))
                           #(>!! ch %))
                 (catch Exception watch-error
-                  (-> (format "Error while watching %s: %s" path watch-error)
+                  (-> (format "[envoy watcher]: could not read latest changes from '%s' due to: %s" path watch-error)
                       prn)
                   (close-all-channels)))
               (alt!
