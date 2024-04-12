@@ -1,3 +1,7 @@
+# 0.1.32
+
+* refactor `envoy.watcher` into a separate namespace _([#13](https://github.com/tolitius/envoy/pull/13) thanks to [@VigneshwaranJheyaraman](https://github.com/VigneshwaranJheyaraman))_
+
 # 0.1.31
 
 * update deps versions:
