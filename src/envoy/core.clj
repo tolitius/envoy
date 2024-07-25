@@ -24,9 +24,13 @@
    (read-values resp true))
   ([{:keys [body error status opts] :as resp} to-keys?]
    (if (or error (not= status 200))
-     (if (= 404 status)
-       (throw (RuntimeException. (str "could not find path in consul" {:path (:url opts)})))
-       (throw (RuntimeException. (str "failed to read from consul" {:path (:url opts)
+     (cond
+       (= 404 status) (throw (RuntimeException. (str "could not find path in consul" {:path (:url opts)})))
+       (nil? status)  (throw (ex-info "Connection timed out" {:error error
+                                                              :path (:url opts)
+                                                              :cause :timeout}
+                                                             error))
+       :else          (throw (RuntimeException. (str "failed to read from consul" {:path (:url opts)
                                                                     :error error
                                                                     :http-status status}))))
      (into {}
