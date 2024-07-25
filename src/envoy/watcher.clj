@@ -20,7 +20,7 @@
   (-> (http/get path (core/with-ops ops))
       index-of)))
 
-(defn- data->channel
+(defn- put-if-channel-open!
   "push to channel _iff_ the channel is open and actively listening"
   [channel {:keys [on-active
                    on-close
@@ -53,12 +53,12 @@
   ([path fun stop?]
    (start-watcher path fun stop? {}))
   ([path fun stop? ops]
-   (let [data-listener-channel  (chan)
-         close-all-channels     (fn []
-                                  (close! data-listener-channel)
-                                  (data->channel stop? {:data LISTENER-STOP-VALUE
-                                                        :on-open (fn [channel _]
-                                                                   (close! channel))}))]
+   (let [watcher-channel    (chan)
+         close-all-channels (fn []
+                                  (close! watcher-channel)
+                                  (put-if-channel-open! stop? {:data LISTENER-STOP-VALUE
+                                                               :on-open (fn [channel _]
+                                                                          (close! channel))}))]
      (go-loop [index   nil
                current (handle-consul-read-error
                          close-all-channels
@@ -69,11 +69,11 @@
                           (merge (core/with-ops (merge ops
                                                        {:index (or index (read-index path ops))}))
                                  (core/with-auth ops))
-                          #(>!! data-listener-channel %))) 
+                          #(>!! watcher-channel %)))
               (alt!
-                stop?                 ([_]
-                                       (prn "stopping" path "watcher"))
-                data-listener-channel ([resp]
+                stop?           ([_]
+                                 (prn "stopping" path "watcher"))
+                watcher-channel ([resp]
                                        (let [new-idx (index-of resp)
                                              new-vs (core/read-values resp)]
                                          (when (and index (not= new-idx index))               ;; first time there is no index
@@ -87,7 +87,7 @@
 (deftype Watcher [ch]
   Stoppable
   (stop [_]
-    (data->channel ch {:on-open #(>!! % LISTENER-STOP-VALUE)})))
+    (put-if-channel-open! ch {:on-open #(>!! % LISTENER-STOP-VALUE)})))
 
 (defn watch-path
   ([path fun]
