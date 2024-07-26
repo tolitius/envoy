@@ -4,7 +4,8 @@
             [org.httpkit.client :as http]
             [envoy.tools :as tools]
             [clojure.string :as string])
-  (:import [java.util Base64]))
+  (:import [java.util Base64]
+           [org.httpkit.client TimeoutException]))
 
 (defn recurse [path]
   (str path "?recurse"))
@@ -22,17 +23,17 @@
 (defn read-values
   ([resp]
    (read-values resp true))
-  ([{:keys [body error status opts] :as resp} to-keys?]
+  ([{:keys [body error status opts]} to-keys?]
    (if (or error (not= status 200))
      (cond
-       (= 404 status) (throw (RuntimeException. (str "could not find path in consul" {:path (:url opts)})))
-       (nil? status)  (throw (ex-info "Connection timed out" {:error error
-                                                              :path (:url opts)
-                                                              :cause :timeout}
-                                                             error))
-       :else          (throw (RuntimeException. (str "failed to read from consul" {:path (:url opts)
-                                                                    :error error
-                                                                    :http-status status}))))
+       (= 404 status)                       (throw (RuntimeException. (str "could not find path in consul" {:path (:url opts)})))
+       (instance? TimeoutException error)   (throw (ex-info "Connection timed out" {:error error
+                                                                                    :path (:url opts)
+                                                                                    :cause :timeout}
+                                                            error))
+       :else                                (throw (RuntimeException. (str "failed to read from consul" {:path (:url opts)
+                                                                                                         :error error
+                                                                                                         :http-status status}))))
      (into {}
            (for [{:keys [Key Value]} (json/parse-string body true)]
              [(if to-keys? (keyword Key) Key)
