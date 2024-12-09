@@ -4,28 +4,33 @@
             [envoy.tools :as tools]
             [org.httpkit.client :as http]))
 
-(defn- format-resp [{:keys [body error status] :as resp}]
-  (if (or error (not= status 200))
-    (throw (RuntimeException. (str "could not /GET from consul due to: " (tools/dissoc-in resp [:opts :query-params :token] ))))
-    (->> (json/parse-string body true)
-         (mapv #(tools/fmk % csk/->kebab-case)))))
+(defn error-message [{:keys [error status]}]
+  (or (some-> error (.getMessage))
+      (str "response status was " status)))
 
 (defn- hget
   ([path]
    (hget path {}))
   ([path ops]
-   (-> @(http/get path
-                  (tools/with-ops (dissoc ops :keywordize?)))
-       (format-resp))))
+   (let [{:keys [body error status] :as resp} @(http/get path
+                                                         (tools/with-ops ops))]
+     (if (or error (not= status 200))
+       (throw (ex-info (str "could not GET from consul due to: " (error-message resp))
+                       (tools/dissoc-in resp [:opts :query-params :token])
+                       error))
+       (->> (json/parse-string body true)
+            (mapv #(tools/fmk % csk/->kebab-case)))))))
 
 (defn- hput
   ([path v]
    (hput path v {}))
   ([path v ops]
-   (let [{:keys [status] :as resp} @(http/put path (merge {:body v}
-                                                          (tools/with-ops ops)))]
-     (if-not (= 200 status)
-       (throw (RuntimeException. (str "could not /PUT to consul due to: " (tools/dissoc-in resp [:opts :query-params :token] ))))
+   (let [{:keys [error status] :as resp} @(http/put path (merge {:body v}
+                                                                (tools/with-ops ops)))]
+     (if (or error (not= 200 status))
+       (throw (ex-info (str "could not PUT to consul due to: " (error-message resp))
+                       (tools/dissoc-in resp [:opts :query-params :token])
+                       error))
        (-> resp
            :body
            (json/parse-string true))))))
