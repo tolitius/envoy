@@ -18,14 +18,19 @@
   ([{:keys [body error status opts]} to-keys?]
    (if (or error (not= status 200))
      (cond
-       (= 404 status)                       (throw (RuntimeException. (str "could not find path in consul" {:path (:url opts)})))
-       (instance? TimeoutException error)   (throw (ex-info "Connection timed out" {:error error
-                                                                                    :path (:url opts)
-                                                                                    :cause :timeout}
-                                                            error))
-       :else                                (throw (RuntimeException. (str "failed to read from consul" {:path (:url opts)
-                                                                                                         :error error
-                                                                                                         :http-status status}))))
+       (= 404 status)
+       (throw (ex-info (str "could not find path in consul " (:url opts))
+                       {:path (:url opts)}))
+
+       (instance? TimeoutException error)
+       (throw (ex-info "Connection timed out" {:path (:url opts)
+                                               :cause :timeout}
+                       error))
+       :else
+       (ex-info "failed to read from consul"
+                {:path (:url opts)
+                 :http-status status}
+                error))
      (into {}
            (for [{:keys [Key Value]} (json/parse-string body true)]
              [(if to-keys? (keyword Key) Key)
@@ -74,9 +79,13 @@
        (read-values keywordize?))))
 
 (defn strip-offset [xs offset]
-  (let [stripped (get-in xs (tools/cpath->kpath offset))]
-    (or stripped
-        (throw (RuntimeException. (str "could not remove offset" {:data xs :offset offset :reason (str "this usually happens if both prefix and offset are used. for example (envoy/consul->map 'http://localhost:8500/v1/kv/hubble' {:offset 'mission'}) while it should have been (envoy/consul->map 'http://localhost:8500/v1/kv' {:offset '/hubble/mission'})")}))))))
+  (if-let [stripped (get-in xs (tools/cpath->kpath offset))]
+    stripped
+    (let [reason (str "this usually happens if both prefix and offset are used, "
+                      "for example (envoy/consul->map \"http://localhost:8500/v1/kv/hubble\" {:offset \"mission\"})"
+                      "while it should have been (envoy/consul->map \"http://localhost:8500/v1/kv\" {:offset \"/hubble/mission\"})")]
+      (throw (ex-info (str "could not remove offset: " reason)
+                      {:data xs :offset offset})))))
 
 (defn consul->map
   [path & [{:keys [serializer offset preserve-offset] :or {serializer :edn} :as ops}]]
