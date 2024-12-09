@@ -7,18 +7,10 @@
   (:import [java.util Base64]
            [org.httpkit.client TimeoutException]))
 
-(defn recurse [path]
-  (str path "?recurse"))
-
-(defn with-ops [ops]
-  {:query-params (tools/remove-nils ops)})
-
-(defn with-auth [{:keys [token]}]
-  (if token
-    {:headers {"authorization" token}}))
+(defonce ^:private base64-decoder (Base64/getDecoder))
 
 (defn- fromBase64 [^String s]
-  (String. (.decode (Base64/getDecoder) s)))
+  (String. (.decode base64-decoder s)))
 
 (defn read-values
   ([resp]
@@ -47,8 +39,7 @@
 (defn url-builder
   "Create an envoy kv-path builder"
   [{:keys [hosts port secure?]
-    :or {hosts ["localhost"] port 8500 secure? false}
-    :as conf}]
+    :or {hosts ["localhost"] port 8500 secure? false}}]
   (let [proto (if secure? "https://" "http://")
         consul-node (find-consul-node hosts)]
     (fn [& [path]]
@@ -60,27 +51,26 @@
   ([path v]
    (put path v {}))
   ([path v ops]
-   ;; (println "@(http/put" path (merge {:body v} (with-ops ops)))
-   (let [{:keys [status] :as resp} @(http/put path (merge {:body v}
-                                                             (with-ops ops)))]
-     (when-not (= 200 status)
-       (throw (RuntimeException. (str "could not PUT to consul due to: " resp)))))))
+   (let [{:keys [error status] :as resp} @(http/put path (merge {:body v}
+                                                                (tools/with-ops ops)))]
+     (when (or error (not= 200 status))
+       (throw (ex-info (str "could not PUT to consul: " path) resp error))))))
 
 (defn delete
   ([path]
    (delete path {}))
   ([path ops]
-   @(http/delete (recurse path)
-                 (with-ops ops))))
+   @(http/delete (tools/recurse path)
+                 (tools/with-ops ops))))
 
 (defn get-all
   ([path]
    (get-all path {}))
   ([path {:keys [keywordize?] :as ops
           :or {keywordize? true}}]
-   (-> @(http/get (recurse (tools/without-slash path))
-                  (merge (with-ops (dissoc ops :keywordize?))
-                         (with-auth ops)))
+   (-> @(http/get (tools/recurse (tools/without-slash path))
+                  (merge (tools/with-ops (dissoc ops :keywordize?))
+                         (tools/with-auth ops)))
        (read-values keywordize?))))
 
 (defn strip-offset [xs offset]
@@ -103,10 +93,9 @@
 
 (defn- overwrite-with
     [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
-    (let [[consul-url sub-path]  (string/split kv-path #"kv" 2)
-          update-kv-path (str consul-url "kv")
+    (let [[sub-path]  (string/split kv-path #"kv" 2)
           kpath (tools/cpath->kpath sub-path)
-          stored-map (reduce (fn [acc [k v]]
+          stored-map (reduce (fn [acc [k _]]
                                (merge acc (consul->map
                                             (str kv-path "/" (name k))
                                             {:serializer serializer})))
@@ -118,7 +107,7 @@
          (doseq [[k v] (tools/map->props to-add serializer)]
              (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
          ;;remove
-         (doseq [[k v] (tools/map->props to-remove serializer)]
+         (doseq [[k _] (tools/map->props to-remove serializer)]
             (when (nil? (get-in to-add (tools/cpath->kpath k) nil))
                 @(http/delete (str kv-path "/" k))))))
 

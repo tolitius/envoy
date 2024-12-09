@@ -1,7 +1,6 @@
 (ns envoy.tools
   (:require [cheshire.core :as json]
-            [clojure.string :as s]
-            [clojure.edn :as edn]))
+            [clojure.string :as s]))
 
 (defn key->prop [k]
   (-> k
@@ -59,10 +58,11 @@
                 (catch Throwable _ v))
       (deserialize v :edn)))
 
-(defn- str->value [v & [deserializer]]
+(defn- str->value
   "consul values are strings. str->value will convert:
   the numbers to longs, the alphanumeric values to strings, and will use Clojure reader for the rest
   in case reader can't read OR it reads a symbol, the value will be returned as is (a string)"
+  [v & [deserializer]]
   (cond
     (nil? v)                         v
     (re-matches #"[0-9]+" v)         (Long/parseLong v)
@@ -72,7 +72,6 @@
 
 (defn- key->path [k level]
   (as-> k $
-        ;; (s/lower-case $)
         (s/split $ level)
         (remove #{""} $)   ;; in case "/foo/bar" remove the result for the first slash
         (map keyword $)))
@@ -204,7 +203,7 @@
    dissociates an entry from a nested associative structure returning a new
    nested structure. keys is a sequence of keys. Any empty maps that result
    will not be present in the new structure."
-  [m [k & ks :as keys]]
+  [m [k & ks]]
   (if ks
     (if-let [nextmap (get m k)]
       (let [newmap (dissoc-in nextmap ks)]
@@ -213,3 +212,15 @@
           (dissoc m k)))
       m)
     (dissoc m k)))
+
+(defn with-ops [ops]
+  (some->> (remove-nils ops)
+           not-empty
+           (hash-map :query-params)))
+
+(defn recurse [path]
+  (str path "?recurse"))
+
+(defn with-auth [{:keys [token]}]
+  (when token
+    {:headers {"authorization" token}}))
