@@ -1,36 +1,29 @@
 (ns envoy.session
-  (:require [clojure.set :as sets]
-            [camel-snake-kebab.core :as csk]
+  (:require [camel-snake-kebab.core :as csk]
             [cheshire.core :as json]
-            [org.httpkit.client :as http]
-            [envoy.tools :as tools]))
+            [envoy.tools :as tools]
+            [org.httpkit.client :as http]))
 
-(defn- format-resp [{:keys [body error status opts] :as resp} to-keys?]
-  ; (clojure.pprint/pprint resp)
+(defn- format-resp [{:keys [body error status] :as resp}]
   (if (or error (not= status 200))
     (throw (RuntimeException. (str "could not /GET from consul due to: " (tools/dissoc-in resp [:opts :query-params :token] ))))
     (->> (json/parse-string body true)
          (mapv #(tools/fmk % csk/->kebab-case)))))
 
-(defn- with-ops [ops]
-  {:query-params (tools/remove-nils ops)})
-
 (defn- hget
   ([path]
    (hget path {}))
-  ([path {:keys [keywordize?] :as ops
-          :or {keywordize? true}}]
+  ([path ops]
    (-> @(http/get path
-                  (with-ops (dissoc ops :keywordize?)))
-       (format-resp keywordize?))))
+                  (tools/with-ops (dissoc ops :keywordize?)))
+       (format-resp))))
 
 (defn- hput
   ([path v]
    (hput path v {}))
   ([path v ops]
-   ;; (println "@(http/put" path (merge {:body v} (with-ops ops)))
    (let [{:keys [status] :as resp} @(http/put path (merge {:body v}
-                                                          (with-ops ops)))]
+                                                          (tools/with-ops ops)))]
      (if-not (= 200 status)
        (throw (RuntimeException. (str "could not /PUT to consul due to: " (tools/dissoc-in resp [:opts :query-params :token] ))))
        (-> resp
@@ -39,7 +32,7 @@
 
 (defn- with-version [url]
   ;; it's been v1 since 2014 (inception)
-  ;; TODO: fogure out what, if anything can change it later
+  ;; TODO: figure out what, if anything can change it later
   (tools/concat-with-slash url "v1"))
 
 
@@ -104,8 +97,7 @@
   ([url args]
    (acquire-lock url args {}))
   ([url {:keys [path task session-id]
-         :or {path "locks"}
-         :as args} opts]
+         :or {path "locks"}} opts]
    (hput (-> url with-version (str "/kv/" path "/" task "/.lock?acquire=" session-id))
          (json/generate-string {:acquire session-id})
          opts)))
@@ -114,8 +106,7 @@
   ([url args]
    (release-lock url args {}))
   ([url {:keys [path task session-id]
-         :or {path "locks"}
-         :as args} opts]
+         :or {path "locks"}} opts]
    (hput (-> url with-version (str "/kv/" path "/" task "/.lock?release=" session-id))
          (json/generate-string {:release session-id})
          opts)))
