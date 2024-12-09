@@ -73,6 +73,7 @@
 
 (defn- key->path [k level]
   (as-> k $
+        ;; (s/lower-case $)
         (s/split $ level)
         (remove #{""} $)   ;; in case "/foo/bar" remove the result for the first slash
         (map keyword $)))

@@ -4,13 +4,20 @@
             [org.httpkit.client :as http]
             [envoy.tools :as tools]
             [clojure.string :as string])
-  (:import [java.util Base64]
-           [org.httpkit.client TimeoutException]))
+  (:import java.util.Base64))
 
 (defonce ^:private base64-decoder (Base64/getDecoder))
 
 (defn- fromBase64 [^String s]
   (String. (.decode base64-decoder s)))
+
+(defn- timeout-error?
+  [error]
+  (->> error
+       class
+       str
+       (re-find #"org.httpkit.client.TimeoutException")
+       some?))
 
 (defn read-values
   ([resp]
@@ -22,8 +29,8 @@
        (throw (ex-info (str "could not find path in consul " (:url opts))
                        {:path (:url opts)}))
 
-       (instance? TimeoutException error)
-       (throw (ex-info "Connection timed out" {:path (:url opts)
+       (timeout-error? error)
+       (throw (ex-info "connection timed out" {:path (:url opts)
                                                :cause :timeout}
                        error))
        :else
@@ -92,13 +99,16 @@
   (let [full-path (if offset
                     (tools/concat-with-slash path offset)
                     path)
-        consul-map (-> (partial get-all full-path (merge
-                                     (dissoc ops :serializer :offset :preserve-offset)
-                                     {:keywordize? false}))
-                       (tools/props->map serializer))]
-       (if preserve-offset
-         consul-map
-         (strip-offset consul-map offset))))
+        get-fn    (fn []
+                    (get-all
+                     full-path
+                     (merge
+                      (dissoc ops :serializer :offset :preserve-offset)
+                      {:keywordize? false})))
+        consul-map (tools/props->map get-fn serializer)]
+    (if preserve-offset
+      consul-map
+      (strip-offset consul-map offset))))
 
 (defn- overwrite-with
   [path input-map & [{:keys [offset serializer] :or {serializer :edn} :as ops}]]
