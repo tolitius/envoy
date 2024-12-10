@@ -1,6 +1,7 @@
 (ns envoy.tools
   (:require [cheshire.core :as json]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [clojure.walk :as walk]))
 
 (defn key->prop [k]
   (-> k
@@ -96,6 +97,20 @@
             (comp remove? second)
             m))))
 
+(defn remove-empty-keys
+  "Recursively remove keys with empty values.
+
+  We use the empty? predicate only, therefore not checking for blank strings."
+  [m]
+  ;; adapted from https://stackoverflow.com/a/34221816/1888507
+  (let [f (fn [x]
+            (cond (map? x)
+                  (let [kvs (filter (comp not nil? second) x)]
+                    (if (empty? kvs) nil (into {} kvs)))
+                  (or (set? x) (sequential? x)) (if (empty? x) nil x)
+                  :else x))]
+    (walk/postwalk f m)))
+
 (defn include-explicit-nils
   "There are certain scnearios, where Configuration from CONSUL should support explicit `nil` values
    Replace explicit `nil` [case insensitive] value with nil"
@@ -154,7 +169,7 @@
 
 (defn clean-slash
     [path]
-    (s/join "/"(remove #{""} (s/split path #"/"))))
+    (s/join "/" (remove #{""} (s/split path #"/"))))
 
 (defn without-slash
   "removes slash from either ':first' or ':last' (default) position
@@ -224,3 +239,8 @@
 (defn with-auth [{:keys [token]}]
   (when token
     {:headers {"authorization" token}}))
+
+(defn complete-key-path [path offset k]
+  (cond-> path
+    offset (concat-with-slash offset)
+    :always (concat-with-slash (name k))))
