@@ -101,32 +101,46 @@
          (strip-offset consul-map offset))))
 
 (defn- overwrite-with
-    [kv-path m & [{:keys [serializer] :or {serializer :edn} :as ops}]]
-    (let [[sub-path]  (string/split kv-path #"kv" 2)
-          kpath (tools/cpath->kpath sub-path)
-          stored-map (reduce (fn [acc [k _]]
-                               (merge acc (consul->map
-                                            (str kv-path "/" (name k))
-                                            {:serializer serializer})))
-                               {} m)
-         ;;to update correctly seq we need to pre-serialize map
-          [to-add to-remove _] (diff (tools/serialize-map m serializer)
-                                    (tools/serialize-map (get-in stored-map kpath) serializer))]
-         ;;add
-         (doseq [[k v] (tools/map->props to-add serializer)]
-             (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
-         ;;remove
-         (doseq [[k _] (tools/map->props to-remove serializer)]
-            (when (nil? (get-in to-add (tools/cpath->kpath k) nil))
-                @(http/delete (str kv-path "/" k))))))
+  [path input-map & [{:keys [offset serializer] :or {serializer :edn} :as ops}]]
+  (let [;; make sure we get rid of empty keys (or the diff will be wrong)
+        stored-map (tools/remove-empty-keys
+                    (try
+                      (consul->map path (merge ops {:serializer serializer}))
+                      (catch Exception _
+                        {})))
+        ;;to update correctly seq we need to pre-serialize map
+        [to-add to-remove _] (diff (tools/serialize-map input-map serializer)
+                                   (tools/serialize-map stored-map serializer))
+        side-effect-ops (dissoc ops :serializer :update)]
+    ;; Removing has to be done first as "Maps are subdiffed where keys match and values differ" in
+    ;; clojure.data/diff. Example:
+    ;;
+    ;; -- input map   {:kafka {:bootstrap-servers "localhost:9092"}}
+    ;; -- store map   {:kafka {:bootstrap-servers "foo"}}
+    ;; -- diff        [{:kafka {:bootstrap-servers "localhost:9092"}}
+    ;;                 {:kafka {:bootstrap-servers "foo"}}
+    ;;                 nil]
+    ;; Deleting *after* adding would just remove the key.
+    (doseq [[k _] (tools/map->props to-remove serializer)]
+      (when (nil? (get-in to-add (tools/cpath->kpath k)))
+        (delete (tools/complete-key-path path offset k)
+                side-effect-ops)))
+    ;; adding
+    (doseq [[k v] (tools/map->props to-add serializer)]
+      (put (tools/complete-key-path path offset k)
+           (str v)
+           side-effect-ops))))
 
 (defn map->consul
-  [kv-path m & [{:keys [serializer overwrite?] :or {serializer :edn overwrite? false} :as ops}]]
-  (let [kv-path (tools/without-slash kv-path)]
+  [path input-map & [{:keys [offset overwrite? serializer]
+                      :or {serializer :edn overwrite? false} :as ops}]]
+  (let [path (tools/without-slash path)]
     (if-not overwrite?
-       (doseq [[k v] (tools/map->props m serializer)]
-          (put (str kv-path "/" k) (str v) (dissoc ops :serializer :update)))
-       (overwrite-with kv-path m ops))))
+      (doseq [[k v] (tools/map->props input-map serializer)]
+        (put (tools/complete-key-path path offset k)
+             (str v)
+             (dissoc ops :serializer :update)))
+      (overwrite-with path input-map ops))))
 
 (defn copy
   ([path from to]
