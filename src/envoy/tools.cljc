@@ -1,5 +1,6 @@
 (ns envoy.tools
   (:require [cheshire.core :as json]
+            [clojure.edn :as edn]
             [clojure.string :as s]
             [clojure.walk :as walk]))
 
@@ -48,12 +49,11 @@
   [v serializer]
   (condp = serializer
       :edn (try
-            (let [parsed (read-string v)]
+            (let [parsed (edn/read-string v)]
                 (if (symbol? parsed)
                     v
                     parsed))
-            (catch Throwable _
-             v))
+            (catch Throwable _ v))
       :json (try
                 (json/parse-string-strict v true)
                 (catch Throwable _ v))
