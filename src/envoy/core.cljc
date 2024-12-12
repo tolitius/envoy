@@ -34,10 +34,10 @@
                                                :cause :timeout}
                        error))
        :else
-       (ex-info "failed to read from consul"
-                {:path (:url opts)
-                 :http-status status}
-                error))
+       (throw (ex-info (str "failed to read from consul" (when body (str " (" body ")")))
+                       {:path (:url opts)
+                        :http-status status}
+                       error)))
      (into {}
            (for [{:keys [Key Value]} (json/parse-string body true)]
              [(if to-keys? (keyword Key) Key)
