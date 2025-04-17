@@ -241,6 +241,10 @@
   (when token
     {:headers {"authorization" token}}))
 
+(defn with-bearer-auth [{:keys [token]}]
+  (when token
+    {:headers {"authorization" (str "Bearer " token)}}))
+
 (defn complete-key-path [path offset k]
   (cond-> path
     offset (concat-with-slash offset)
