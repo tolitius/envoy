@@ -13,7 +13,7 @@
    (hget path {}))
   ([path ops]
    (let [{:keys [body error status] :as resp} @(http/get path
-                                                         (tools/with-ops ops))]
+                                                         (tools/with-bearer-auth ops))]
      (if (or error (not= status 200))
        (throw (ex-info (str "could not GET from consul due to: " (error-message resp))
                        (tools/dissoc-in resp [:opts :query-params :token])
@@ -26,7 +26,7 @@
    (hput path v {}))
   ([path v ops]
    (let [{:keys [error status] :as resp} @(http/put path (merge {:body v}
-                                                                (tools/with-ops ops)))]
+                                                                (tools/with-bearer-auth ops)))]
      (if (or error (not= 200 status))
        (throw (ex-info (str "could not PUT to consul due to: " (error-message resp))
                        (tools/dissoc-in resp [:opts :query-params :token])
