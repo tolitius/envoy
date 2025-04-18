@@ -229,17 +229,27 @@
       m)
     (dissoc m k)))
 
-(defn with-ops [ops]
-  (some->> (remove-nils ops)
-           not-empty
-           (hash-map :query-params)))
+(defn with-ops [{:keys [token auth-as]
+                 :or {auth-as :auto} :as ops}]
+  (let [headers (when token
+                  (case auth-as
+                    :header {"X-Consul-Token" token}
+                    :old-school {"authorization" token}
+                    :query-param {}
+                    :auto {"X-Consul-Token" token,
+                           "authorization" token}))
+        query-params (-> (cond-> (remove-nils ops)
+                           (contains? #{:query-param :auto}
+                                      auth-as)                     identity
+                           (not (contains? #{:query-param :auto}
+                                           auth-as))               (dissoc :token))
+                         not-empty)]
+    (cond-> {}
+      query-params (assoc :query-params query-params)
+      headers (assoc :headers headers))))
 
 (defn recurse [path]
   (str path "?recurse"))
-
-(defn with-auth [{:keys [token]}]
-  (when token
-    {:headers {"authorization" token}}))
 
 (defn complete-key-path [path offset k]
   (cond-> path

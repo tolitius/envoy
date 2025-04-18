@@ -1,3 +1,8 @@
+# 0.1.33
+
+* update auth to support headers (for new'er consul releases [docs](https://developer.hashicorp.com/consul/api-docs/v1.20.x/api-structure#authentication))
+* make it babashka compatible
+
 # 0.1.32
 
 * refactor `envoy.watcher` into a separate namespace _([#13](https://github.com/tolitius/envoy/pull/13) thanks to [@VigneshwaranJheyaraman](https://github.com/VigneshwaranJheyaraman))_

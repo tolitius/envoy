@@ -1,7 +1,8 @@
 (ns envoy.watcher
   (:require [clojure.data :refer [diff]]
             [clojure.core.async :refer [go-loop >!! alt! chan close! put!]]
-            [envoy.core :as core]
+            [envoy.core :as envoy]
+            [envoy.tools :as tools]
             [org.httpkit.client :as http])
   (:import (clojure.lang ExceptionInfo)))
 
@@ -17,7 +18,7 @@
   ([path]
    (read-index path {}))
   ([path ops]
-  (-> (http/get path (core/with-ops ops))
+  (-> (http/get path (tools/with-ops ops))
       index-of)))
 
 (defn- put-if-channel-open!
@@ -59,23 +60,25 @@
                                   (put-if-channel-open! stop? {:data LISTENER-STOP-VALUE
                                                                :on-open (fn [channel _]
                                                                           (close! channel))}))]
+     (println "starting watcher for" (tools/recurse path)
+              "with raw options" ops
+              "with options" (tools/with-ops (merge ops {:index (or nil (read-index path ops))})))
      (go-loop [index   nil
                current (handle-consul-read-error
                          close-all-channels
-                         (core/get-all path ops))]
+                         (envoy/get-all path ops))]
               (handle-consul-read-error
                 close-all-channels
-                (http/get (core/recurse path)
-                          (merge (core/with-ops (merge ops
-                                                       {:index (or index (read-index path ops))}))
-                                 (core/with-auth ops))
+                (http/get (tools/recurse path)
+                          (tools/with-ops (merge ops
+                                                 {:index (or index (read-index path ops))}))
                           #(>!! watcher-channel %)))
               (alt!
                 stop?           ([_]
                                  (prn "stopping" path "watcher"))
                 watcher-channel ([resp]
                                        (let [new-idx (index-of resp)
-                                             new-vs (core/read-values resp)]
+                                             new-vs (envoy/read-values resp)]
                                          (when (and index (not= new-idx index))               ;; first time there is no index
                                            (when-let [changes (first (diff new-vs current))]
                                              (fun changes)))

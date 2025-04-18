@@ -81,8 +81,7 @@
   ([path {:keys [keywordize?] :as ops
           :or {keywordize? true}}]
    (-> @(http/get (tools/recurse (tools/without-slash path))
-                  (merge (tools/with-ops (dissoc ops :keywordize?))
-                         (tools/with-auth ops)))
+                  (tools/with-ops (dissoc ops :keywordize?)))
        (read-values keywordize?))))
 
 (defn strip-offset [xs offset]
