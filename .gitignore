@@ -19,3 +19,4 @@ doo-index.html
 out/
 .cpcache/
 .rebel_readline_history
+.DS_Store
