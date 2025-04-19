@@ -66,7 +66,8 @@
    (let [{:keys [error status] :as resp} @(http/put path (merge {:body v}
                                                                 (tools/with-ops ops)))]
      (when (or error (not= 200 status))
-       (throw (ex-info (str "could not PUT to consul: " path) resp error))))))
+       (throw (ex-info (str "could not PUT to consul: " path) resp error)))
+     (select-keys resp [:body :status]))))
 
 (defn delete
   ([path]

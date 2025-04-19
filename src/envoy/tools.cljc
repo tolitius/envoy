@@ -239,10 +239,9 @@
                     :auto {"X-Consul-Token" token,
                            "authorization" token}))
         query-params (-> (cond-> (remove-nils ops)
-                           (contains? #{:query-param :auto}
-                                      auth-as)                     identity
-                           (not (contains? #{:query-param :auto}
-                                           auth-as))               (dissoc :token))
+                           (contains?      #{:query-param :auto} auth-as)   identity
+                           (not (contains? #{:query-param :auto} auth-as))  (dissoc :token))
+                         (dissoc :auth-as)
                          not-empty)]
     (cond-> {}
       query-params (assoc :query-params query-params)
